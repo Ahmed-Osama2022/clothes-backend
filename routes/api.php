@@ -51,5 +51,9 @@ Route::get('/products/images', function () {
 // Get all users
 Route::get('/users', function () {
   $users = \App\Models\User::with('roles')->get();
-  return response()->json($users);
+  return response()->json([
+    'Count' => $users->count() . ' Users.',
+    'users' => $users,
+
+  ]);
 });
