@@ -17,7 +17,7 @@ class Image extends Model
    * @var array<int, string>
    */
   protected $fillable = [
-    'url',
+    'image_url',
     'sort_order',
   ];
 
