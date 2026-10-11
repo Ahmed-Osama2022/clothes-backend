@@ -64,7 +64,7 @@ class User extends Authenticatable
   }
 
   /**
-   * Convenience check used to gate admin-only routes.
+   * Convenience check used to gate "admin-only" routes.
    */
   public function isAdmin(): bool
   {

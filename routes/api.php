@@ -46,3 +46,10 @@ Route::get('/products/images', function () {
   $products = \App\Models\Product::with(['sizes', 'images'])->get();
   return response()->json($products);
 });
+
+
+// Get all users
+Route::get('/users', function () {
+  $users = \App\Models\User::with('roles')->get();
+  return response()->json($users);
+});
