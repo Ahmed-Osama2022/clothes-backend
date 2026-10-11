@@ -12,3 +12,9 @@ Route::get('/user', function (Request $request) {
 Route::get('/test', function () {
   return response()->json(['message' => 'Test route is working!']);
 });
+
+
+Route::get('/orders', function () {
+  $orders  = \App\Models\Order::with('items')->get();
+  return response()->json($orders);
+});
