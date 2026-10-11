@@ -2,16 +2,22 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Order;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class OrderSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
-    public function run(): void
-    {
-        //
-    }
+  /**
+   * Seed a couple of orders for the existing users, plus guest orders
+   * (user_id null) since guests are allowed to check out.
+   */
+  public function run(): void
+  {
+    User::query()->take(5)->get()->each(function (User $user) {
+      Order::factory()->count(2)->create(['user_id' => $user->id]);
+    });
+
+    Order::factory()->count(2)->create(['user_id' => null]);
+  }
 }
