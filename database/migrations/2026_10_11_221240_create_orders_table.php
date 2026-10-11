@@ -13,7 +13,8 @@ return new class extends Migration
   {
     Schema::create('orders', function (Blueprint $table) {
       $table->id();
-      $table->foreignIdFor('user_id')->constrained()->onDelete('cascade');
+      // Nullable: guests may check out without an account (handoff §5).
+      $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
       $table->enum('status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled'])->default('pending');
 
       // TOTAL AMOUNT OF THE ORDER

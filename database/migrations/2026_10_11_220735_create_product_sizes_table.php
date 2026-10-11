@@ -16,7 +16,6 @@ return new class extends Migration
       $table->foreignIdFor(\App\Models\Product::class)->constrained()->onDelete('cascade');
       $table->string('size');
       $table->unsignedInteger('quantity')->default(0);
-      ('quantity');
 
       $table->unique(['product_id', 'size']);
       $table->timestamps();
