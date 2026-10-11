@@ -98,7 +98,32 @@ user's request so we stay on models + migrations. Reverted files:
 - Verified: `Summer Essentials` → `summer-essentials`, duplicate → `summer-essentials-2`,
   explicit slug preserved, route key = `slug`.
 
+### 12. User roles — `roles` + `role_user` (many-to-many)
+Decision: roles are many-to-many (not a `users.role` column). Guests remain
+users-less (they only exist as `orders.user_id = null`), so no guest role row.
+- `database/migrations/2026_10_11_225310_create_roles_table.php`:
+  `id`, `name` (unique), timestamps.
+- `database/migrations/2026_10_11_225311_create_role_user_table.php`:
+  pivot `id`, `user_id` FK, `role_id` FK (both cascade), unique
+  (`user_id`, `role_id`), timestamps.
+  - Note: this file was renamed from `..._225310_...` to `..._225311_...`
+    because `create_role_user` sorts before `create_roles` at the same
+    timestamp, which would have run the pivot before the `roles` table existed.
+- `app/Models/Role.php` — scaffolded per rule 4
+  (`make:model Role --all --api`); `$fillable = ['name']`, `users(): BelongsToMany`.
+- `app/Models/User.php` — added `roles(): BelongsToMany`, `hasRole(string): bool`,
+  `isAdmin(): bool`.
+- `RoleFactory` (unique name), `RoleSeeder` (idempotent `firstOrCreate` for
+  `admin`, `customer`).
+- `DatabaseSeeder` — seeds roles first, creates an admin
+  (`admin@example.com`) + 10 customers + `test@example.com`, attaching roles.
+- Scaffolded with the model (rule 4): `RoleController`, `RolePolicy`,
+  `StoreRoleRequest`/`UpdateRoleRequest` (stubs, no routes yet).
+- Verified via `migrate:fresh --seed`: roles `admin,customer`, 12 pivot rows,
+  admin `isAdmin() = true`, customer `isAdmin() = false`.
+
 ---
+
 
 ## Open items / next steps
 - Apply soft deletes to `Category` and `Product` (step 6) — not done yet.

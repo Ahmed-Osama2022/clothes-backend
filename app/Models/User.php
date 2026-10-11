@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -44,5 +45,29 @@ class User extends Authenticatable
       'email_verified_at' => 'datetime',
       'password' => 'hashed',
     ];
+  }
+
+  /**
+   * The roles assigned to this user (many-to-many via the role_user pivot).
+   */
+  public function roles(): BelongsToMany
+  {
+    return $this->belongsToMany(Role::class);
+  }
+
+  /**
+   * Whether the user holds the given role (by machine name).
+   */
+  public function hasRole(string $name): bool
+  {
+    return $this->roles()->where('name', $name)->exists();
+  }
+
+  /**
+   * Convenience check used to gate admin-only routes.
+   */
+  public function isAdmin(): bool
+  {
+    return $this->hasRole('admin');
   }
 }
