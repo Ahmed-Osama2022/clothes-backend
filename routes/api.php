@@ -39,7 +39,7 @@ Route::get('/orders/{order}', function (\App\Models\Order $order) {
 });
 
 // Get all ordered items with their product_variants
-Route::get('/orders/{order}/items', function (\App\Models\Order $order) {
+Route::get('/orders/{order}/variant', function (\App\Models\Order $order) {
   $items = $order->items()->with('variant')->get();
   return response()->json($items);
 });
