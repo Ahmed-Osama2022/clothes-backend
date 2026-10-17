@@ -25,7 +25,23 @@ Route::get('/test', function () {
 // Get all orders with their items
 Route::get('/orders', function () {
   $orders  = \App\Models\Order::with('items')->get();
-  return response()->json($orders);
+
+  return response()->json([
+    'Count' => $orders->count() . ' Orders.',
+    'orders' => $orders,
+  ]);
+});
+
+// Get the order with its items by order ID
+Route::get('/orders/{order}', function (\App\Models\Order $order) {
+  $order->load('items');
+  return response()->json($order);
+});
+
+// Get all ordered items with their product_variants
+Route::get('/orders/{order}/items', function (\App\Models\Order $order) {
+  $items = $order->items()->with('variant')->get();
+  return response()->json($items);
 });
 
 // Get all categories with their items
@@ -34,16 +50,16 @@ Route::get('/categories', function () {
   return response()->json($categories);
 });
 
-// GEt all products with their sizes
+// GEt all products with their variants
 Route::get('/products', function () {
-  $products = \App\Models\Product::with('sizes')->get();
+  $products = \App\Models\Product::with('variants')->get();
   return response()->json($products);
 });
 
 
-// Get all products with their sizes and images
+// Get all products with their variants and images
 Route::get('/products/images', function () {
-  $products = \App\Models\Product::with(['sizes', 'images'])->get();
+  $products = \App\Models\Product::with(['variants', 'images'])->get();
   return response()->json($products);
 });
 
