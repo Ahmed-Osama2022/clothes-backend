@@ -9,23 +9,29 @@ use Illuminate\Database\Seeder;
 class OrderItemSeeder extends Seeder
 {
   /**
-   * Give every order 1-2 line items, snapshotting the product's current price,
-   * then recompute total_amount so the stored total matches the seeded lines.
+   * Give every order 1-2 line items, each pointing at a random variant of the
+   * product and snapshotting its effective price, then recompute total_amount
+   * so the stored total matches the seeded lines.
    */
   public function run(): void
   {
-    $sizes = ['XS', 'S', 'M', 'L', 'XL'];
-
-    Order::all()->each(function (Order $order) use ($sizes) {
+    Order::all()->each(function (Order $order) {
       Product::inRandomOrder()
         ->take(fake()->numberBetween(1, 2))
         ->get()
-        ->each(function (Product $product) use ($order, $sizes) {
+        ->each(function (Product $product) use ($order) {
+          $variant = $product->variants()->inRandomOrder()->first();
+
+          if (! $variant) {
+            return;
+          }
+
           $order->items()->create([
             'product_id' => $product->id,
-            'size' => fake()->randomElement($sizes),
+            'product_variant_id' => $variant->id,
+            // Variant price falls back to the product's price when null.
+            'unit_price' => $variant->price ?? $product->price,
             'quantity' => fake()->numberBetween(1, 3),
-            'unit_price' => $product->price,
           ]);
         });
 

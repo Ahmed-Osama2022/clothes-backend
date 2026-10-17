@@ -19,7 +19,7 @@ class OrderItem extends Model
   protected $fillable = [
     'order_id',
     'product_id',
-    'size',
+    'product_variant_id',
     'quantity',
     'unit_price',
   ];
@@ -46,11 +46,18 @@ class OrderItem extends Model
   }
 
   /**
-   * The product purchased on this line. The chosen `size` is stored on the
-   * item (not read from the product) so the line is a historical snapshot.
+   * The product purchased on this line (kept for quick filtering/history).
    */
   public function product(): BelongsTo
   {
     return $this->belongsTo(Product::class);
+  }
+
+  /**
+   * The exact size/color variant that was bought.
+   */
+  public function variant(): BelongsTo
+  {
+    return $this->belongsTo(ProductVariant::class, 'product_variant_id');
   }
 }

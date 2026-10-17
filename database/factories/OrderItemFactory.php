@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -21,7 +22,7 @@ class OrderItemFactory extends Factory
     return [
       'order_id' => Order::factory(),
       'product_id' => Product::factory(),
-      'size' => fake()->randomElement(['XS', 'S', 'M', 'L', 'XL']),
+      'product_variant_id' => ProductVariant::factory(),
       'quantity' => fake()->numberBetween(1, 3),
       'unit_price' => fake()->randomFloat(2, 9, 199),
     ];

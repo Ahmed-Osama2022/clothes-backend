@@ -46,8 +46,11 @@ class Product extends Model
     return $this->morphMany(Image::class, 'imageable')->orderBy('sort_order');
   }
 
-  public function sizes(): HasMany
+  /**
+   * The sellable variants of this product (one row per size/color combo).
+   */
+  public function variants(): HasMany
   {
-    return $this->hasMany(ProductSize::class);
+    return $this->hasMany(ProductVariant::class)->orderBy('sort_order');
   }
 }

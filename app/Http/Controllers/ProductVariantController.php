@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ProductSize;
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreProductVariantRequest;
+use App\Http\Requests\UpdateProductVariantRequest;
+use App\Models\ProductVariant;
 
-class ProductSizeController extends Controller
+class ProductVariantController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -18,7 +19,7 @@ class ProductSizeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreProductVariantRequest $request)
     {
         //
     }
@@ -26,7 +27,7 @@ class ProductSizeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(ProductSize $productSize)
+    public function show(ProductVariant $productVariant)
     {
         //
     }
@@ -34,7 +35,7 @@ class ProductSizeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, ProductSize $productSize)
+    public function update(UpdateProductVariantRequest $request, ProductVariant $productVariant)
     {
         //
     }
@@ -42,7 +43,7 @@ class ProductSizeController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(ProductSize $productSize)
+    public function destroy(ProductVariant $productVariant)
     {
         //
     }

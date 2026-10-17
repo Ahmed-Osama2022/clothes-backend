@@ -15,8 +15,9 @@ return new class extends Migration
       $table->id();
       $table->foreignId('order_id')->constrained()->onDelete('cascade');
       $table->foreignId('product_id')->constrained()->onDelete('cascade');
-      // size
-      $table->string('size');
+      // Chosen variant. Nullable + nullOnDelete so removing a variant does not
+      // erase historical order lines.
+      $table->foreignId('product_variant_id')->nullable()->constrained()->nullOnDelete();
       // qty
       $table->integer('quantity');
       // unit price
