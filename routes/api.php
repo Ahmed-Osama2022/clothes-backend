@@ -50,6 +50,12 @@ Route::get('/categories', function () {
   return response()->json($categories);
 });
 
+// Get all categories with their items
+Route::get('/categories/{category}', function (\App\Models\Category $category) {
+  $category->load('products');
+  return response()->json($category);
+});
+
 // GEt all products with their variants
 Route::get('/products', function () {
   $products = \App\Models\Product::with('variants')->get();
