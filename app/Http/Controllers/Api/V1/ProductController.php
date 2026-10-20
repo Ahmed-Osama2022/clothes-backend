@@ -3,20 +3,24 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Api\V1\ProductResource;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
   /**
-   * Display a listing of the resource.
+   * List products in editorial order, with their gallery and variants.
    */
   public function index()
   {
-    return Product::with(['images', 'variants'])
+    $products = Product::query()
+      ->with(['images', 'variants'])
       ->orderBy('sort_order')
       ->orderBy('id')
       ->get();
+
+    return ProductResource::collection($products);
   }
 
   /**
@@ -28,11 +32,13 @@ class ProductController extends Controller
   }
 
   /**
-   * Display the specified resource.
+   * Show a single product with its category, images and variants.
    */
-  public function show(string $id)
+  public function show(Product $product)
   {
-    //
+    return new ProductResource(
+      $product->load(['category', 'images', 'variants'])
+    );
   }
 
   /**

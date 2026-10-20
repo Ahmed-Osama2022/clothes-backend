@@ -3,23 +3,25 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Api\V1\CategoryResource;
 use App\Models\Category;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
   /**
-   * Display a listing of the resource.
+   * List categories in editorial order, with their gallery and product count.
    */
   public function index()
   {
-    return Category::with('images')
+    $categories = Category::query()
+      ->with('images')
+      ->withCount('products')
       ->orderBy('sort_order')
       ->orderBy('id')
       ->get();
 
-    // $categories = Category::all();
-    // return
+    return CategoryResource::collection($categories);
   }
 
   /**
@@ -31,11 +33,13 @@ class CategoryController extends Controller
   }
 
   /**
-   * Display the specified resource.
+   * Show a single category with its images and products.
    */
   public function show(Category $category)
   {
-    return Category::with(['images', 'products'])->findOrFail($category->id);
+    return new CategoryResource(
+      $category->loadCount('products')->load(['images', 'products'])
+    );
   }
 
   /**
