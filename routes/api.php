@@ -8,12 +8,10 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 
-// Test route
+// TEST: route
 Route::get('/test', function () {
   return response()->json(['message' => 'Test route is working!']);
 });
-
-
 
 
 
