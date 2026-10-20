@@ -33,12 +33,22 @@ class ProductController extends Controller
 
   /**
    * Show a single product with its category, images and variants.
+   * Returns a 404 payload when the slug matches no product.
    */
-  public function show(Product $product)
+  public function show(string $product)
   {
-    return new ProductResource(
-      $product->load(['category', 'images', 'variants'])
-    );
+    $item = Product::with(['category', 'images', 'variants'])
+      ->where('slug', $product)
+      ->first();
+
+    if (! $item) {
+      return response()->json([
+        'message' => "Product ($product) not found, try to refresh the product list or use the correct slug name.",
+        'status' => 404,
+      ], 404);
+    }
+
+    return new ProductResource($item);
   }
 
   /**
