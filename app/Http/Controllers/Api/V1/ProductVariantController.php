@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Requests\StoreProductVariantRequest;
-use App\Http\Requests\UpdateProductVariantRequest;
-use App\Models\ProductVariant;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 
 class ProductVariantController extends Controller
 {
@@ -19,7 +18,7 @@ class ProductVariantController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreProductVariantRequest $request)
+    public function store(Request $request)
     {
         //
     }
@@ -27,7 +26,7 @@ class ProductVariantController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(ProductVariant $productVariant)
+    public function show(string $id)
     {
         //
     }
@@ -35,7 +34,7 @@ class ProductVariantController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateProductVariantRequest $request, ProductVariant $productVariant)
+    public function update(Request $request, string $id)
     {
         //
     }
@@ -43,7 +42,7 @@ class ProductVariantController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(ProductVariant $productVariant)
+    public function destroy(string $id)
     {
         //
     }

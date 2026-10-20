@@ -8,11 +8,6 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 
-// TEST: route
-Route::get('/test', function () {
-  return response()->json(['message' => 'Test route is working!']);
-});
-
 
 
 /**
@@ -20,6 +15,11 @@ Route::get('/test', function () {
  * | TEST: API test routes
  * |----------------------------------------------------------------------|
  */
+// TEST: route
+Route::get('/test', function () {
+  return ['message' => 'Test route is working!'];
+});
+
 // Get all orders with their items
 Route::get('/orders', function () {
   $orders  = \App\Models\Order::with('items')->get();
