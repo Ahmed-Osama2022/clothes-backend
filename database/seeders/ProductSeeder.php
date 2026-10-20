@@ -21,6 +21,7 @@ class ProductSeeder extends Seeder
     Category::all()->each(function (Category $category) use ($sizes) {
       Product::factory()
         ->count(6)
+        ->sequence(fn ($sequence) => ['sort_order' => $sequence->index + 1])
         ->create(['category_id' => $category->id])
         ->each(function (Product $product) use ($sizes) {
           foreach (ProductVariantFactory::COLORS as $color) {

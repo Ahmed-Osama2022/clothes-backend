@@ -27,7 +27,7 @@ class ProductFactory extends Factory
       'description_ar' => fake()->sentence(),
       'price' => fake()->randomFloat(2, 9, 199),
       'is_featured' => fake()->boolean(20),
-      'sort_order' => 0,
+      'sort_order' => fake()->numberBetween(0, 20),
     ];
   }
 }
