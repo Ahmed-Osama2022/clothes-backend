@@ -34,12 +34,23 @@ class CategoryController extends Controller
 
   /**
    * Show a single category with its images and products.
+   * Returns a 404 payload when the slug matches no category.
    */
-  public function show(Category $category)
+  public function show(string $category)
   {
-    return new CategoryResource(
-      $category->loadCount('products')->load(['images', 'products'])
-    );
+    $item = Category::withCount('products')
+      ->with(['images', 'products'])
+      ->where('slug', $category)
+      ->first();
+
+    if (! $item) {
+      return response()->json([
+        'message' => "Category ($category) not found, try to refresh the category list or use the correct slug name.",
+        'status' => 404,
+      ], 404);
+    }
+
+    return new CategoryResource($item);
   }
 
   /**

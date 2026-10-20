@@ -39,3 +39,26 @@ php artisan make:model <Name> --all --api
 
 - `--all` generates the model + migration + factory + seeder + controller + policy (+ form request).
 - `--api` generates an **API resource controller** (no `create`/`edit` web methods) — required to match the project's JSON-only contract.
+
+## 5. API not-found responses
+
+For single-item endpoints (`show`, and any explicit lookup before `update`/`destroy`), do **not** rely on the framework's default route-model-binding 404. Look the record up explicitly and return a JSON body that names the resource and echoes the requested identifier:
+
+```php
+$item = Product::with(['category', 'images', 'variants'])
+  ->where('slug', $product)
+  ->first();
+
+if (! $item) {
+  return response()->json([
+    'message' => "Product ($product) not found, try to refresh the product list or use the correct slug name.",
+    'status' => 404,
+  ], 404);
+}
+
+return new ProductResource($item);
+```
+
+- Use HTTP **404** and include a `status` field equal to the status code.
+- Keep the message resource-specific (`Product`, `Category`, …) and include the requested slug.
+- Use this same payload shape for every resource so clients can handle errors uniformly.
