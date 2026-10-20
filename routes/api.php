@@ -14,8 +14,10 @@ Route::group(['prefix' => 'v1', 'namespace' => "App\Http\Controllers\Api\V1"], f
   // Categories
   // Route::apiResource('categories', 'CategoryController'); // OR
   Route::apiResource('categories', CategoryController::class);
+
   // Products
   Route::apiResource('products', 'ProductController');
+
   // Orders
   Route::apiResource('orders', 'OrderController');
 });

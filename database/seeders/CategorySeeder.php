@@ -22,6 +22,7 @@ class CategorySeeder extends Seeder
         'title_ar' => 'المجموعة المميزة',
         'description_en' => 'Timeless essentials crafted to last.',
         'description_ar' => 'أساسيات خالدة صُنعت لتدوم.',
+        'sort_order' => 1,
       ],
       [
         'slug' => 'mid-season-sale',
@@ -30,6 +31,7 @@ class CategorySeeder extends Seeder
         'title_ar' => 'تخفيضات منتصف الموسم',
         'description_en' => 'Limited-time markdowns on selected pieces.',
         'description_ar' => 'تخفيضات لفترة محدودة على قطع مختارة.',
+        'sort_order' => 2,
       ],
       [
         'slug' => 'best-sellers',
@@ -38,6 +40,7 @@ class CategorySeeder extends Seeder
         'title_ar' => 'الأكثر مبيعاً',
         'description_en' => 'The pieces our customers love most.',
         'description_ar' => 'القطع الأكثر محبة من عملائنا.',
+        'sort_order' => 3,
       ],
     ];
 

@@ -13,7 +13,10 @@ class CategoryController extends Controller
    */
   public function index()
   {
-    return Category::with('images')->get();
+    return Category::with('images')
+      ->orderBy('sort_order')
+      ->orderBy('id')
+      ->get();
 
     // $categories = Category::all();
     // return
@@ -32,7 +35,7 @@ class CategoryController extends Controller
    */
   public function show(Category $category)
   {
-    return Category::with('images')->findOrFail($category->id);
+    return Category::with(['images', 'products'])->findOrFail($category->id);
   }
 
   /**

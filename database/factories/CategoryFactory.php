@@ -23,6 +23,7 @@ class CategoryFactory extends Factory
       'title_ar' => fake()->words(3, true),
       'description_en' => fake()->sentence(),
       'description_ar' => fake()->sentence(),
+      'sort_order' => fake()->numberBetween(0, 20),
     ];
   }
 }
