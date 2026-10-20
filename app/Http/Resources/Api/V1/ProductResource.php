@@ -46,7 +46,7 @@ class ProductResource extends JsonResource
   {
     $locale = $request->query('lang', app()->getLocale());
 
-    return in_array($locale, ['en', 'ar'], true) ? $locale : 'en';
+    return in_array($locale, ['en', 'ar'], true) ? $locale : config('app.locale', 'en');
   }
 
   /**
