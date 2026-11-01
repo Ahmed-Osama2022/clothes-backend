@@ -413,7 +413,10 @@ return [
             [
               'status' => 401,
               'description' => 'No token/session was sent.',
-              'example' => ['message' => 'Unauthenticated.'],
+              'example' => [
+                'message' => 'Authentication required. Send a Sanctum bearer token.',
+                'status' => 401,
+              ],
             ],
             [
               'status' => 403,
@@ -501,7 +504,10 @@ return [
             [
               'status' => 401,
               'description' => 'No token/session was sent — checkout requires a customer.',
-              'example' => ['message' => 'Unauthenticated.'],
+              'example' => [
+                'message' => 'Authentication required. Send a Sanctum bearer token.',
+                'status' => 401,
+              ],
             ],
             [
               'status' => 409,
@@ -592,7 +598,10 @@ return [
             [
               'status' => 401,
               'description' => 'No token/session was sent.',
-              'example' => ['message' => 'Unauthenticated.'],
+              'example' => [
+                'message' => 'Authentication required. Send a Sanctum bearer token.',
+                'status' => 401,
+              ],
             ],
             [
               'status' => 403,
@@ -679,7 +688,10 @@ return [
             [
               'status' => 401,
               'description' => 'No token/session was sent.',
-              'example' => ['message' => 'Unauthenticated.'],
+              'example' => [
+                'message' => 'Authentication required. Send a Sanctum bearer token.',
+                'status' => 401,
+              ],
             ],
             [
               'status' => 403,
@@ -730,7 +742,10 @@ return [
             [
               'status' => 401,
               'description' => 'No token/session was sent.',
-              'example' => ['message' => 'Unauthenticated.'],
+              'example' => [
+                'message' => 'Authentication required. Send a Sanctum bearer token.',
+                'status' => 401,
+              ],
             ],
             [
               'status' => 403,
@@ -866,8 +881,11 @@ return [
             ],
             [
               'status' => 401,
-              'description' => 'Unauthenticated.',
-              'example' => ['message' => 'Unauthenticated.'],
+              'description' => 'No token/session was sent.',
+              'example' => [
+                'message' => 'Authentication required. Send a Sanctum bearer token.',
+                'status' => 401,
+              ],
             ],
           ],
         ],

@@ -41,7 +41,13 @@ class OrderEndpointTest extends TestCase
 
     $this->postJson('/api/v1/orders', [
       'items' => [['product_variant_id' => $variant->id, 'quantity' => 1]],
-    ])->assertStatus(401);
+    ])
+      ->assertStatus(401)
+      // Custom renderer in bootstrap/app.php — not Laravel's "Unauthenticated."
+      ->assertExactJson([
+        'message' => 'Authentication required. Send a Sanctum bearer token.',
+        'status' => 401,
+      ]);
 
     $this->assertDatabaseCount('orders', 0);
   }
@@ -197,7 +203,12 @@ class OrderEndpointTest extends TestCase
 
   public function test_guest_cannot_list_orders(): void
   {
-    $this->getJson('/api/v1/orders')->assertStatus(401);
+    $this->getJson('/api/v1/orders')
+      ->assertStatus(401)
+      ->assertExactJson([
+        'message' => 'Authentication required. Send a Sanctum bearer token.',
+        'status' => 401,
+      ]);
   }
 
   public function test_owner_can_view_their_order(): void

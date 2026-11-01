@@ -245,9 +245,18 @@ Guests hitting a protected route without `Accept: application/json` used to 500
 with `Route [login] not defined` (the default `redirectGuestsTo` calls
 `route('login')`, which does not exist here). Now guests under `/api/*` get no
 redirect and `shouldRenderJsonWhen` forces JSON rendering, so every API error
-keeps the `{ message, status }` shape. Verified: `GET /api/v1/orders`,
-`GET /api/v1/orders/1`, `GET /api/user` all return `401
-{"message":"Unauthenticated."}`.
+keeps the `{ message, status }` shape.
+
+### 6b. Custom 401 body
+An `AuthenticationException` renderer was added to `bootstrap/app.php`:
+`/api/*` now answers `401 {"message":"Authentication required. Send a Sanctum
+bearer token.","status":401}` instead of the framework default
+`{"message":"Unauthenticated."}`. It covers every protected route
+(`/api/v1/orders*`, `/api/user`, future ones) and returns `null` for non-API
+requests so web behaviour is unchanged. `docs/api/v1.php` 401 examples (6)
+updated, and the two 401 tests now assert the exact body. Verified live:
+`GET /api/v1/orders`, `GET /api/user` and a request without `Accept` all return
+the new body with status 401; `/docs/api` renders it (0 "Unauthenticated.").
 
 ### 7. Docs
 New **Orders** group in `docs/api/v1.php`: `GET/POST /orders`,
