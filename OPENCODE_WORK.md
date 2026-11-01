@@ -193,6 +193,13 @@ links instead of the old placeholder URLs.
 the API: `GET /api/v1/products/classic-white-tee` and
 `GET /api/v1/categories/signature-collection` return the Unsplash URLs.
 
+### 6. `ImageResource` aligned with the other resources
+Image objects were the only snake_case payload (`sort_order`) and lacked
+timestamps. Now: `id`, `url`, `sortOrder`, `createdAt`, `updatedAt` — same
+camelCase + ISO-8601 shape as Category/Product/Variant. The 5 image examples in
+`docs/api/v1.php` were updated to match (including a `+02:00` offset, since the
+seeded rows are now in November). `Report.md` §3.4/§7.5 updated.
+
 ---
 
 ## Open items / next steps
