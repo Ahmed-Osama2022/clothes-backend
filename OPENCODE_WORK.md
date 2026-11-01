@@ -164,6 +164,37 @@ links still land on an expanded endpoint. The chevron animates over the same
 
 ---
 
+## Session 3 — Real catalog images
+
+### 1. `database/seeders/ImageSeeder.php`
+Replaced the Faker placeholder URLs with a curated pool of **60 Unsplash
+clothing/fashion photos** (`public const PHOTOS`), every link HTTP-verified and
+visually reviewed. Photos are handed out sequentially: 2 per category, 3 per
+product, `sort_order` 1..n so the first image is a stable hero. 60 links map
+exactly onto 3×2 + 18×3 = 60 slots, so every gallery is distinct.
+
+### 2. `database/factories/ImageFactory.php`
+`url` now comes from `ImageSeeder::PHOTOS` (random element), so factory-made
+images are never placeholders either — one source of truth for the pool.
+
+### 3. `images.url` → `images.image_url` (aligned end to end)
+Per the owner's decision, the column was renamed **in the original create
+migration** (`$table->string('image_url')`) instead of adding a rename
+migration, then the DB was rebuilt. Updated with it: `ImageFactory`
+(`image_url`), `ImageSeeder` (`image_url`, back to plain `create()` since the
+allow-list now matches), and `ImageResource` (`'url' => $this->image_url`, so the
+public JSON key stays `url`). `docs/api/v1.php` examples now use real Unsplash
+links instead of the old placeholder URLs.
+
+### 4. Re-seeded (one-off, user-approved)
+`php artisan migrate:fresh --seed` — 60 images, 60 distinct URLs, 0 placeholders,
+2 images per category, 3 per product; other counts unchanged (12 users,
+3 categories, 18 products, 360 variants, 32 orders, 48 items). Verified through
+the API: `GET /api/v1/products/classic-white-tee` and
+`GET /api/v1/categories/signature-collection` return the Unsplash URLs.
+
+---
+
 ## Open items / next steps
 - Apply soft deletes to `Category` and `Product` (step 6) — not done yet.
 - Build the actual API layer later: controllers, form requests, routes, the

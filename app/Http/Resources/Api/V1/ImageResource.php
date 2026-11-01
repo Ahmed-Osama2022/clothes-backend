@@ -20,7 +20,8 @@ class ImageResource extends JsonResource
   {
     return [
       'id' => $this->id,
-      'url' => $this->url,
+      // DB column is image_url; the public JSON key stays "url".
+      'url' => $this->image_url,
       'sort_order' => $this->sort_order,
     ];
   }

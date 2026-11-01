@@ -90,8 +90,8 @@ return [
                     'sortOrder' => 1,
                     'productsCount' => 6,
                     'images' => [
-                      ['id' => 1, 'url' => 'https://via.placeholder.com/800x800.png/00aaaa?text=fashion', 'sort_order' => 0],
-                      ['id' => 2, 'url' => 'https://via.placeholder.com/800x800.png/0055cc?text=fashion', 'sort_order' => 0],
+                      ['id' => 1, 'url' => 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&h=1200&q=80', 'sort_order' => 0],
+                      ['id' => 2, 'url' => 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=900&h=1200&q=80', 'sort_order' => 0],
                     ],
                     'createdAt' => '2026-10-21T00:59:37+03:00',
                     'updatedAt' => '2026-10-21T00:59:37+03:00',
@@ -139,7 +139,7 @@ return [
                   'sortOrder' => 1,
                   'productsCount' => 6,
                   'images' => [
-                    ['id' => 1, 'url' => 'https://via.placeholder.com/800x800.png/00aaaa?text=fashion', 'sort_order' => 0],
+                    ['id' => 1, 'url' => 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&h=1200&q=80', 'sort_order' => 0],
                   ],
                   'products' => [
                     [
@@ -205,7 +205,7 @@ return [
                     'sortOrder' => 1,
                     'categoryName' => 'Signature Collection',
                     'images' => [
-                      ['id' => 7, 'url' => 'https://via.placeholder.com/800x800.png/003344?text=fashion', 'sort_order' => 0],
+                      ['id' => 7, 'url' => 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=900&h=1200&q=80', 'sort_order' => 0],
                     ],
                     'variants' => [
                       [
@@ -279,7 +279,7 @@ return [
                   'sortOrder' => 1,
                   'categoryName' => 'Signature Collection',
                   'images' => [
-                    ['id' => 7, 'url' => 'https://via.placeholder.com/800x800.png/003344?text=fashion', 'sort_order' => 0],
+                    ['id' => 7, 'url' => 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=900&h=1200&q=80', 'sort_order' => 0],
                   ],
                   'variants' => [
                     [

@@ -14,7 +14,7 @@ return new class extends Migration
     Schema::create('images', function (Blueprint $table) {
       $table->id();
       $table->morphs('imageable');
-      $table->string('url');
+      $table->string('image_url');
       $table->unsignedSmallInteger('sort_order')->default(0);
       $table->timestamps();
     });
