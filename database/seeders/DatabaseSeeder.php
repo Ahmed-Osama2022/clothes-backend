@@ -23,12 +23,12 @@ class DatabaseSeeder extends Seeder
 
     // One admin account for the dashboard side.
     User::factory()
-      ->create(['name' => 'Admin', 'email' => 'admin@example.com'])
+      ->create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 'admin'])
       ->roles()->attach($admin);
 
     // Registered shoppers.
     User::factory(10)->create()->each(
-      fn (User $user) => $user->roles()->attach($customer)
+      fn(User $user) => $user->roles()->attach($customer)
     );
 
     User::factory()
