@@ -149,10 +149,14 @@
       margin-left: auto;
       color: var(--muted);
       font-size: 13px;
-      transition: transform 0.15s ease;
+      transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .card[open] > .card-head::after { transform: rotate(90deg); }
+
+    /* While collapsing, `open` is still true until the animation ends — reset
+       the chevron immediately so it does not lag behind the motion. */
+    .card.card--closing > .card-head::after { transform: none; }
 
     .card[open] > .card-head { border-bottom: 1px solid var(--line); }
 
@@ -431,9 +435,82 @@
   </footer>
 
   <script>
-    // The accordion itself is pure <details>/<summary>. This only makes the
-    // sidebar links usable: jump to an endpoint and open its card, including
-    // when the hash changes without a full page load.
+    // The fold is native <details>/<summary>; this adds a smooth 250ms
+    // expand/collapse (height + fade + slight slide) and keeps sidebar deep
+    // links working. Users who prefer reduced motion get an instant toggle.
+    const FOLD_DURATION = 250;
+    const FOLD_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function cardBody(details) {
+      return details.querySelector('.card-body');
+    }
+
+    function expand(details) {
+      const body = cardBody(details);
+      details.classList.remove('card--closing');
+      details.open = true;
+
+      if (prefersReducedMotion || !body) {
+        return;
+      }
+
+      body.getAnimations().forEach((animation) => animation.cancel());
+      body.style.overflow = 'hidden';
+
+      const animation = body.animate(
+        [
+          { maxHeight: '0px', paddingTop: '0px', paddingBottom: '0px', opacity: 0, transform: 'translateY(-6px)' },
+          { maxHeight: `${body.scrollHeight}px`, paddingTop: '16px', paddingBottom: '20px', opacity: 1, transform: 'translateY(0)' },
+        ],
+        { duration: FOLD_DURATION, easing: FOLD_EASING }
+      );
+
+      animation.onfinish = () => {
+        // Drop the inline clip so <pre> keeps its own scrollbars.
+        body.style.overflow = '';
+      };
+    }
+
+    function collapse(details) {
+      const body = cardBody(details);
+
+      if (prefersReducedMotion || !body) {
+        details.open = false;
+        return;
+      }
+
+      body.getAnimations().forEach((animation) => animation.cancel());
+      body.style.overflow = 'hidden';
+      details.classList.add('card--closing');
+
+      const animation = body.animate(
+        [
+          { maxHeight: `${body.scrollHeight}px`, paddingTop: '16px', paddingBottom: '20px', opacity: 1, transform: 'translateY(0)' },
+          { maxHeight: '0px', paddingTop: '0px', paddingBottom: '0px', opacity: 0, transform: 'translateY(-6px)' },
+        ],
+        { duration: FOLD_DURATION, easing: FOLD_EASING, fill: 'forwards' }
+      );
+
+      animation.onfinish = () => {
+        details.open = false;
+        details.classList.remove('card--closing');
+        animation.cancel(); // release the fill so the closed card is clean
+        body.style.overflow = '';
+      };
+    }
+
+    document.querySelectorAll('details.card > summary').forEach((summary) => {
+      summary.addEventListener('click', (event) => {
+        event.preventDefault(); // native toggle would skip the animation
+
+        const details = summary.parentElement;
+        details.open ? collapse(details) : expand(details);
+      });
+    });
+
+    // Sidebar links: jump to an endpoint and expand its card, including when
+    // the hash changes without a full page load.
     function openCardFromHash() {
       let target = null;
 
@@ -443,8 +520,8 @@
         // Malformed hash — nothing to open.
       }
 
-      if (target && target.tagName === 'DETAILS') {
-        target.open = true;
+      if (target && target.tagName === 'DETAILS' && !target.open) {
+        expand(target);
       }
     }
 

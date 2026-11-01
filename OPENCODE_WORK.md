@@ -155,9 +155,12 @@ from real responses of the running API.
 
 ### 5. Foldable endpoints
 Each endpoint card is now a native `<details>/<summary>` accordion — collapsed by
-default, opens only on click (keyboard accessible, no JS for the fold). A ~15-line
-inline script opens the card targeted by a sidebar anchor (`#get-products-product`)
-so deep links still land on an expanded endpoint.
+default, opens only on click (keyboard accessible, no JS for the fold). A small
+inline script adds a 250ms `cubic-bezier(0.4, 0, 0.2, 1)` height/fade/slide
+transition for expand and collapse (instant under `prefers-reduced-motion`), and
+opens the card targeted by a sidebar anchor (`#get-products-product`) so deep
+links still land on an expanded endpoint. The chevron animates over the same
+250ms.
 
 ---
 
