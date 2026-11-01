@@ -18,7 +18,9 @@ trait HasSlug
   {
     static::creating(function ($model) {
       if (blank($model->slug)) {
-        $model->slug = $model->generateUniqueSlug($model->name);
+        // Most models slug from `name`; pages have no name column, so they
+        // fall back to the English title.
+        $model->slug = $model->generateUniqueSlug($model->name ?? $model->title_en ?? '');
       }
     });
   }

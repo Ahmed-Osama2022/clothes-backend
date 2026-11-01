@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
       CategorySeeder::class,
       ProductSeeder::class,
       ImageSeeder::class,
+      PageSeeder::class,
       OrderSeeder::class,
       OrderItemSeeder::class,
     ]);

@@ -323,6 +323,92 @@ return [
       ],
     ],
     [
+      'name' => 'Content',
+      'slug' => 'content',
+      'description' => 'Editorial pages shared by every storefront client (Vue SPA, Flutter app). '
+        . 'Content is pre-translated and returned as structured blocks, never HTML.',
+      'endpoints' => [
+        [
+          'method' => 'GET',
+          'path' => '/about',
+          'summary' => 'About Us page',
+          'description' => 'Returns the published "about" page as one aggregate, cacheable payload. '
+            . 'Blocks are grouped by kind so clients render them natively: "sections" (heading + body), '
+            . '"stats" (label + value), "contact" (label + value) and "social" (platform + url). '
+            . 'Responses carry an ETag and Cache-Control: public, max-age=300 — send If-None-Match to get a 304.',
+          'auth' => 'Public',
+          'parameters' => [
+            [
+              'name' => 'lang',
+              'in' => 'query',
+              'type' => 'string (en | ar)',
+              'required' => false,
+              'description' => 'Language for title, intro and every block heading/body. '
+                . 'Values other than en/ar fall back to the application locale.',
+            ],
+            [
+              'name' => 'If-None-Match',
+              'in' => 'header',
+              'type' => 'string',
+              'required' => false,
+              'description' => 'ETag from a previous response; answering 304 means the cached copy is still valid.',
+            ],
+          ],
+          'responses' => [
+            [
+              'status' => 200,
+              'description' => 'The localized about page. Always includes every array, empty when unused.',
+              'example' => [
+                'data' => [
+                  'slug' => 'about',
+                  'title' => 'About Us',
+                  'intro' => 'A bilingual clothing store built around timeless essentials, honest prices and pieces you will actually wear.',
+                  'sections' => [
+                    [
+                      'heading' => 'Our Story',
+                      'body' => 'We started in 2021 with a small rail of essentials and one idea: clothes that feel good, fit well, and last longer than a season.',
+                    ],
+                    [
+                      'heading' => 'Our Mission',
+                      'body' => 'Make everyday dressing simple. We keep the catalog tight, the fabrics soft, and the prices honest.',
+                    ],
+                  ],
+                  'stats' => [
+                    ['label' => 'Happy customers', 'value' => '12k+'],
+                    ['label' => 'Curated products', 'value' => '500+'],
+                  ],
+                  'contact' => [
+                    ['label' => 'Email', 'value' => 'hello@clothes-shop.test'],
+                    ['label' => 'Phone', 'value' => '+20 100 000 0000'],
+                  ],
+                  'social' => [
+                    ['platform' => 'Instagram', 'url' => 'https://instagram.com/clothes-shop'],
+                  ],
+                  'images' => [
+                    ['id' => 61, 'url' => 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&h=1200&q=80', 'sortOrder' => 1, 'createdAt' => '2026-11-01T20:30:00+02:00', 'updatedAt' => '2026-11-01T20:30:00+02:00'],
+                  ],
+                  'updatedAt' => '2026-11-01T20:30:00+02:00',
+                ],
+              ],
+            ],
+            [
+              'status' => 304,
+              'description' => 'The If-None-Match ETag matches; reuse the cached body.',
+              'example' => null,
+            ],
+            [
+              'status' => 404,
+              'description' => 'The about page is missing or unpublished.',
+              'example' => [
+                'message' => 'About page not found, try again later or contact support.',
+                'status' => 404,
+              ],
+            ],
+          ],
+        ],
+      ],
+    ],
+    [
       'name' => 'Authentication',
       'slug' => 'authentication',
       // Lives outside the /v1 prefix, so the group overrides the base URL.

@@ -386,7 +386,9 @@
                     <span class="status status--{{ intdiv($response['status'], 100) }}xx">{{ $response['status'] }}</span>
                     <span>{{ $response['description'] }}</span>
                   </div>
-                  <pre>{{ json_encode($response['example'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</pre>
+                  <pre>{{ $response['example'] === null
+                    ? 'No response body.'
+                    : json_encode($response['example'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</pre>
                 @endforeach
               </div>
             </details>

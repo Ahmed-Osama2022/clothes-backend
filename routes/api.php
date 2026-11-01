@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AboutController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,9 @@ Route::group(['prefix' => 'v1', 'namespace' => "App\Http\Controllers\Api\V1"], f
 
   // Orders
   Route::apiResource('orders', 'OrderController');
+
+  // Static content pages (aggregated for the Vue SPA and the Flutter app).
+  Route::get('about', [AboutController::class, 'show'])->name('api.v1.about');
 });
 
 
