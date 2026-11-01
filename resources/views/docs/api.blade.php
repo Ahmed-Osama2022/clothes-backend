@@ -123,25 +123,40 @@
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 10px;
-      padding: 20px 22px;
-      margin-bottom: 18px;
+      padding: 0;
+      margin-bottom: 12px;
+      scroll-margin-top: 16px;
     }
 
-    .card-head {
+    /* Each endpoint is a native <details>: collapsed by default, opens only
+       when clicked. No JavaScript is involved in the fold itself. */
+    .card > .card-head {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 10px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 14px;
+      padding: 14px 22px;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
     }
 
-    .card-head h3 {
-      margin: 0;
-      font-size: 15px;
-      font-weight: 600;
+    .card > .card-head::-webkit-details-marker { display: none; }
+
+    /* Chevron: points right when collapsed, down when open. */
+    .card > .card-head::after {
+      content: "▸";
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 13px;
+      transition: transform 0.15s ease;
     }
+
+    .card[open] > .card-head::after { transform: rotate(90deg); }
+
+    .card[open] > .card-head { border-bottom: 1px solid var(--line); }
+
+    .card-body { padding: 16px 22px 20px; }
 
     .badge {
       font: 600 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -162,7 +177,6 @@
     }
 
     .auth {
-      margin-left: auto;
       font-size: 11px;
       color: var(--muted);
       border: 1px solid var(--line);
@@ -325,51 +339,53 @@
             @php
               $base = $group['base'] ?? $spec['base_url'];
             @endphp
-            <article class="card" id="{{ $anchorFor($endpoint) }}">
-              <div class="card-head">
+            <details class="card" id="{{ $anchorFor($endpoint) }}">
+              <summary class="card-head">
                 <span class="badge badge--{{ strtolower($endpoint['method']) }}">{{ $endpoint['method'] }}</span>
                 <span class="path">{{ $base }}{{ $endpoint['path'] }}</span>
                 <span class="auth">{{ $endpoint['auth'] }}</span>
-              </div>
+              </summary>
 
-              <p><strong>{{ $endpoint['summary'] }}</strong></p>
-              <p>{{ $endpoint['description'] }}</p>
+              <div class="card-body">
+                <p><strong>{{ $endpoint['summary'] }}</strong></p>
+                <p>{{ $endpoint['description'] }}</p>
 
-              @if (! empty($endpoint['parameters']))
-                <h4>Parameters</h4>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>In</th>
-                      <th>Type</th>
-                      <th>Required</th>
-                      <th>Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @foreach ($endpoint['parameters'] as $parameter)
+                @if (! empty($endpoint['parameters']))
+                  <h4>Parameters</h4>
+                  <table>
+                    <thead>
                       <tr>
-                        <td><code>{{ $parameter['name'] }}</code></td>
-                        <td>{{ $parameter['in'] }}</td>
-                        <td>{{ $parameter['type'] }}</td>
-                        <td>{{ $parameter['required'] ? 'Yes' : 'No' }}</td>
-                        <td>{{ $parameter['description'] }}</td>
+                        <th>Name</th>
+                        <th>In</th>
+                        <th>Type</th>
+                        <th>Required</th>
+                        <th>Description</th>
                       </tr>
-                    @endforeach
-                  </tbody>
-                </table>
-              @endif
+                    </thead>
+                    <tbody>
+                      @foreach ($endpoint['parameters'] as $parameter)
+                        <tr>
+                          <td><code>{{ $parameter['name'] }}</code></td>
+                          <td>{{ $parameter['in'] }}</td>
+                          <td>{{ $parameter['type'] }}</td>
+                          <td>{{ $parameter['required'] ? 'Yes' : 'No' }}</td>
+                          <td>{{ $parameter['description'] }}</td>
+                        </tr>
+                      @endforeach
+                    </tbody>
+                  </table>
+                @endif
 
-              <h4>Responses</h4>
-              @foreach ($endpoint['responses'] as $response)
-                <div class="status-line">
-                  <span class="status status--{{ intdiv($response['status'], 100) }}xx">{{ $response['status'] }}</span>
-                  <span>{{ $response['description'] }}</span>
-                </div>
-                <pre>{{ json_encode($response['example'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</pre>
-              @endforeach
-            </article>
+                <h4>Responses</h4>
+                @foreach ($endpoint['responses'] as $response)
+                  <div class="status-line">
+                    <span class="status status--{{ intdiv($response['status'], 100) }}xx">{{ $response['status'] }}</span>
+                    <span>{{ $response['description'] }}</span>
+                  </div>
+                  <pre>{{ json_encode($response['example'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</pre>
+                @endforeach
+              </div>
+            </details>
           @endforeach
         </section>
       @endforeach
@@ -383,26 +399,28 @@
         </p>
 
         <div class="card">
-          <table>
-            <thead>
-              <tr>
-                <th>Method</th>
-                <th>Path</th>
-                <th>Summary</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              @foreach ($spec['planned'] as $item)
+          <div class="card-body">
+            <table>
+              <thead>
                 <tr>
-                  <td><span class="badge badge--{{ strtolower($item['method']) }}">{{ $item['method'] }}</span></td>
-                  <td><code>{{ $spec['base_url'] }}{{ $item['path'] }}</code></td>
-                  <td>{{ $item['summary'] }}</td>
-                  <td>{{ $item['note'] }}</td>
+                  <th>Method</th>
+                  <th>Path</th>
+                  <th>Summary</th>
+                  <th>Status</th>
                 </tr>
-              @endforeach
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                @foreach ($spec['planned'] as $item)
+                  <tr>
+                    <td><span class="badge badge--{{ strtolower($item['method']) }}">{{ $item['method'] }}</span></td>
+                    <td><code>{{ $spec['base_url'] }}{{ $item['path'] }}</code></td>
+                    <td>{{ $item['summary'] }}</td>
+                    <td>{{ $item['note'] }}</td>
+                  </tr>
+                @endforeach
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     </main>
@@ -411,5 +429,27 @@
   <footer>
     {{ $spec['title'] }} {{ $spec['version'] }} — generated from <code>docs/api/v1.php</code>.
   </footer>
+
+  <script>
+    // The accordion itself is pure <details>/<summary>. This only makes the
+    // sidebar links usable: jump to an endpoint and open its card, including
+    // when the hash changes without a full page load.
+    function openCardFromHash() {
+      let target = null;
+
+      try {
+        target = document.querySelector(location.hash);
+      } catch (error) {
+        // Malformed hash — nothing to open.
+      }
+
+      if (target && target.tagName === 'DETAILS') {
+        target.open = true;
+      }
+    }
+
+    window.addEventListener('hashchange', openCardFromHash);
+    openCardFromHash();
+  </script>
 </body>
 </html>

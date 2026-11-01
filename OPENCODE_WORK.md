@@ -153,6 +153,12 @@ from real responses of the running API.
 - All 8 JSON example blocks decode as valid JSON after HTML-entity decoding.
 - `php artisan test` still passes (2 skeleton tests).
 
+### 5. Foldable endpoints
+Each endpoint card is now a native `<details>/<summary>` accordion — collapsed by
+default, opens only on click (keyboard accessible, no JS for the fold). A ~15-line
+inline script opens the card targeted by a sidebar anchor (`#get-products-product`)
+so deep links still land on an expanded endpoint.
+
 ---
 
 ## Open items / next steps
