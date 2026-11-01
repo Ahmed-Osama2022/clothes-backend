@@ -62,3 +62,11 @@ return new ProductResource($item);
 - Use HTTP **404** and include a `status` field equal to the status code.
 - Keep the message resource-specific (`Product`, `Category`, …) and include the requested slug.
 - Use this same payload shape for every resource so clients can handle errors uniformly.
+
+## 6. No front-end work (for now)
+
+This project is backend-only: a pure JSON API consumed by external front-ends.
+
+Do **not** create or touch anything front-end related — no Blade views, no Tailwind/CSS, no JS bundles, no Vite assets, no Inertia/Livewire. If a task seems to require front-end output, stop and ask the user first; the answer is "no need for now" unless they explicitly say otherwise.
+
+The `resources/` directory and Vite wiring exist only from the default Laravel skeleton — treat them as untouched boilerplate, not as something to build on.
