@@ -20,7 +20,10 @@ Route::group(['prefix' => 'v1', 'namespace' => "App\Http\Controllers\Api\V1"], f
   Route::apiResource('products', 'ProductController');
 
   // Orders
-  Route::apiResource('orders', 'OrderController');
+  // Checkout (POST) is public so guests can buy; reading, status changes and
+  // deletion require a Sanctum-authenticated caller (owner or admin).
+  Route::apiResource('orders', 'OrderController')
+    ->middlewareFor(['index', 'show', 'update', 'destroy'], 'auth:sanctum');
 
   // Static content pages (aggregated for the Vue SPA and the Flutter app).
   Route::get('about', [AboutController::class, 'show'])->name('api.v1.about');

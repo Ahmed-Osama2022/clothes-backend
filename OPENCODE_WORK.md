@@ -202,11 +202,88 @@ seeded rows are now in November). `Report.md` §3.4/§7.5 updated.
 
 ---
 
+## Session 4 — Orders API
+
+### 1. Model
+`Order` gained `STATUSES` (mirrors the DB enum) and `items()` now orders by `id`,
+so line order in the JSON is stable.
+
+### 2. Validation — `app/Http/Requests/`
+- `StoreOrderRequest`: `items` (array, min 1), `items.*.product_variant_id`
+  (exists + `distinct`), `items.*.quantity` (1–99). **Prices are not accepted** —
+  they are snapshotted from the DB. A custom message explains the `distinct` rule.
+- `UpdateOrderRequest`: `status` must be one of `Order::STATUSES`; nothing else is
+  mutable after checkout.
+
+### 3. Checkout transaction — `OrderController@store`
+Reads the variants, rejects inactive ones, then decrements with a **guarded
+`UPDATE ... WHERE quantity >= ?`** (the atomic oversell gate — no lock, no
+read-then-write race), snapshots `unit_price` (variant price, falling back to the
+product price), sums the total **in cents** to avoid float drift, and writes the
+order + items inside `DB::transaction`. Any shortfall throws
+`OrderConflictException` → transaction rolls back → `409 {message, status}`.
+Guests get `user_id = null`; a token/session links the order.
+
+### 4. Resources
+`OrderResource`: `id, status, totalAmount, itemsCount, customer{id,name,email}|null,
+items[], createdAt, updatedAt`. `OrderItemResource`: `id, productId,
+productVariantId, quantity, unitPrice, lineTotal, product{id,slug,name,title},
+variant{id,size,color,colorHex,sku}` — nested snapshots stay compact, and the
+product title / variant color honour `?lang=`.
+
+### 5. Policy + routes
+`OrderPolicy` is real: admin lists/updates/deletes, owner-or-admin views (guest
+orders are admin-only). `Gate::authorize()` runs in every action.
+`Route::apiResource('orders')->middlewareFor(['index','show','update','destroy'],
+'auth:sanctum')` — checkout stays public for guests.
+
+### 6. `bootstrap/app.php` — JSON-only API errors
+Guests hitting a protected route without `Accept: application/json` used to 500
+with `Route [login] not defined` (the default `redirectGuestsTo` calls
+`route('login')`, which does not exist here). Now guests under `/api/*` get no
+redirect and `shouldRenderJsonWhen` forces JSON rendering, so every API error
+keeps the `{ message, status }` shape. Verified: `GET /api/v1/orders`,
+`GET /api/v1/orders/1`, `GET /api/user` all return `401
+{"message":"Unauthenticated."}`.
+
+### 7. Docs
+New **Orders** group in `docs/api/v1.php`: `GET/POST /orders`,
+`GET/PUT|PATCH/DELETE /orders/{order}` with parameters (`lang`, body fields),
+status codes (200/201/204/401/403/404/409/422) and accurate examples; the three
+order rows were removed from `planned` (replaced by `/me/orders` and
+`/orders/{order}/cancel`). The blade now prints "No response body." when a status
+has `example => null` (used by 204).
+
+### 8. Tests — `tests/Feature/OrderEndpointTest.php` (20 tests)
+Guest checkout (total `89.48`, stock decremented, `customer: null`), authenticated
+checkout linked to the account, `409` on insufficient stock (nothing written),
+`409` on inactive variant, `422` for empty/unknown/duplicate/zero-quantity lines,
+admin list vs customer `403` vs guest `401`, owner view vs other-customer `403`,
+admin view of a guest order, JSON `404` payload, admin status update vs customer
+`403`, invalid status `422`, admin delete `204` vs customer `403`.
+
+### 9. Verified
+- `php artisan test` → **29 passed** (121 assertions) on sqlite `:memory:`.
+- Live smoke on MySQL (read-only): admin token → `GET /api/v1/orders?lang=ar`
+  returns 27 orders with localized product title (`طقم استرخاء من قطعتين`) and
+  color (`أبيض`), `itemsCount`, nullable `customer`; `GET /api/v1/orders/1` → 200.
+  The temporary token was deleted afterwards.
+- `/docs/api` renders 200 with the Orders group; unauthenticated calls return 401
+  JSON.
+
+---
+
 ## Open items / next steps
 - Apply soft deletes to `Category` and `Product` (step 6) — not done yet.
-- Build the actual API layer later: controllers, form requests, routes, the
-  order-placement transaction with per-size stock re-check returning `409`
-  (`{ "message": "Size «M» is out of stock" }`).
+- Auth endpoints (`/api/v1/auth/login|register|logout`) — required before the
+  token-guarded order routes are usable by clients (orders work today only with a
+  manually issued Sanctum token).
+- `GET /me/orders` (customer order history) and `POST /orders/{order}/cancel`
+  (owner, `pending`/`processing` only) — documented as planned.
+- Per-variant stock endpoint (`GET /products/{id}/stock` → `{product_id, sizes[]}`)
+  and an aggregated `/api/home` feed — still missing.
 - Seed the real catalog: the handoff's 18 products + exact Arabic strings still
   need to replace the factory-generated demo data.
 - `reviews`, `promo`, `testimonials` tables/seeders not created yet.
+- Pending decision: rename the About CMS model `Page` → `About` (tables not
+  migrated yet, so the rename is still free).

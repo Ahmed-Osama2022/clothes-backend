@@ -4,63 +4,48 @@ namespace App\Policies;
 
 use App\Models\Order;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class OrderPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
-    {
-        return false;
-    }
+  /**
+   * The shop-wide order list is a back-office view (customers will use their
+   * own history endpoint once it exists).
+   */
+  public function viewAny(User $user): bool
+  {
+    return $user->isAdmin();
+  }
 
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, Order $order): bool
-    {
-        return false;
-    }
+  /**
+   * A customer sees only their own orders. Guest orders (user_id is null) are
+   * admin-only: a guest has no credentials to prove they placed them.
+   */
+  public function view(User $user, Order $order): bool
+  {
+    return $user->isAdmin() || $order->user_id === $user->id;
+  }
 
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
-    {
-        return false;
-    }
+  /**
+   * Checkout itself is open to guests; StoreOrderRequest handles the input.
+   */
+  public function create(User $user): bool
+  {
+    return true;
+  }
 
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, Order $order): bool
-    {
-        return false;
-    }
+  /**
+   * Status changes are the fulfilment team's job.
+   */
+  public function update(User $user, Order $order): bool
+  {
+    return $user->isAdmin();
+  }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, Order $order): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Order $order): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Order $order): bool
-    {
-        return false;
-    }
+  /**
+   * Deleting an order erases its history, so admins only.
+   */
+  public function delete(User $user, Order $order): bool
+  {
+    return $user->isAdmin();
+  }
 }

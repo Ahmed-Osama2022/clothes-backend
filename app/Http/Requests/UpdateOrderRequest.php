@@ -2,27 +2,31 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Order;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateOrderRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return false;
-    }
+  /**
+   * The policy check lives in the controller (OrderPolicy@update), which knows
+   * the specific order being changed.
+   */
+  public function authorize(): bool
+  {
+    return true;
+  }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
-    public function rules(): array
-    {
-        return [
-            //
-        ];
-    }
+  /**
+   * Only the status is mutable after checkout — items, the price snapshots and
+   * the total are historical records and must not be rewritten.
+   *
+   * @return array<string, mixed>
+   */
+  public function rules(): array
+  {
+    return [
+      'status' => ['required', 'string', Rule::in(Order::STATUSES)],
+    ];
+  }
 }

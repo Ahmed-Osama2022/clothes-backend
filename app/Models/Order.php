@@ -13,6 +13,12 @@ class Order extends Model
   use HasFactory;
 
   /**
+   * The full lifecycle, mirroring the `status` enum in the migration so the
+   * form request, resource and docs share one source of truth.
+   */
+  public const STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+
+  /**
    * The attributes that are mass assignable.
    *
    * @var array<int, string>
@@ -44,10 +50,10 @@ class Order extends Model
   }
 
   /**
-   * The line items that make up this order.
+   * The line items that make up this order, in the order they were added.
    */
   public function items(): HasMany
   {
-    return $this->hasMany(OrderItem::class);
+    return $this->hasMany(OrderItem::class)->orderBy('id');
   }
 }

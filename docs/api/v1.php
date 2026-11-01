@@ -323,6 +323,426 @@ return [
       ],
     ],
     [
+      'name' => 'Orders',
+      'slug' => 'orders',
+      'description' => 'Checkout and order history. Placing an order is the only public write in the API '
+        . '(guests are allowed); reading, status changes and deletion are either owner-scoped or admin-only.',
+      'endpoints' => [
+        [
+          'method' => 'GET',
+          'path' => '/orders',
+          'summary' => 'List every order (admin)',
+          'description' => 'Returns all orders newest first, each with its customer (null for guest orders), '
+            . 'line items and an itemsCount. A customer only sees their own orders through '
+            . 'GET /orders/{order}; a shop-wide list is admin-only.',
+          'auth' => 'Sanctum (admin only)',
+          'parameters' => [
+            [
+              'name' => 'lang',
+              'in' => 'query',
+              'type' => 'string (en | ar)',
+              'required' => false,
+              'description' => 'Language for the nested product title and variant color. Defaults to the application locale.',
+            ],
+          ],
+          'responses' => [
+            [
+              'status' => 200,
+              'description' => 'All orders, newest first.',
+              'example' => [
+                'data' => [
+                  [
+                    'id' => 24,
+                    'status' => 'pending',
+                    'totalAmount' => '89.48',
+                    'itemsCount' => 2,
+                    'customer' => [
+                      'id' => 11,
+                      'name' => 'Test User',
+                      'email' => 'test@example.com',
+                    ],
+                    'items' => [
+                      [
+                        'id' => 41,
+                        'productId' => 7,
+                        'productVariantId' => 21,
+                        'quantity' => 2,
+                        'unitPrice' => '19.99',
+                        'lineTotal' => '39.98',
+                        'product' => [
+                          'id' => 7,
+                          'slug' => 'classic-white-tee',
+                          'name' => 'Classic White Tee',
+                          'title' => 'Classic White Tee',
+                        ],
+                        'variant' => [
+                          'id' => 21,
+                          'size' => 'M',
+                          'color' => 'White',
+                          'colorHex' => '#FFFFFF',
+                          'sku' => 'CLASSIC-WHITE-TEE-M-WHITE',
+                        ],
+                      ],
+                      [
+                        'id' => 42,
+                        'productId' => 9,
+                        'productVariantId' => 33,
+                        'quantity' => 1,
+                        'unitPrice' => '49.50',
+                        'lineTotal' => '49.50',
+                        'product' => [
+                          'id' => 9,
+                          'slug' => 'boutique-blazer',
+                          'name' => 'Boutique Blazer',
+                          'title' => 'Boutique Blazer',
+                        ],
+                        'variant' => [
+                          'id' => 33,
+                          'size' => 'L',
+                          'color' => 'Navy',
+                          'colorHex' => '#001F3F',
+                          'sku' => 'BOUTIQUE-BLAZER-L-NAVY',
+                        ],
+                      ],
+                    ],
+                    'createdAt' => '2026-11-01T20:30:00+02:00',
+                    'updatedAt' => '2026-11-01T20:30:00+02:00',
+                  ],
+                ],
+              ],
+            ],
+            [
+              'status' => 401,
+              'description' => 'No token/session was sent.',
+              'example' => ['message' => 'Unauthenticated.'],
+            ],
+            [
+              'status' => 403,
+              'description' => 'Authenticated, but not an admin.',
+              'example' => ['message' => 'This action is unauthorized.'],
+            ],
+          ],
+        ],
+        [
+          'method' => 'POST',
+          'path' => '/orders',
+          'summary' => 'Place an order (guest or authenticated)',
+          'description' => 'Creates the order and its lines in a single transaction. Prices are never accepted from '
+            . 'the client: each line snapshots the variant price (or the parent product price when the variant price '
+            . 'is null) and the total is recomputed server-side. Stock is decremented with a guarded update, so two '
+            . 'simultaneous checkouts cannot oversell — the loser receives 409. When a token is sent the order is '
+            . 'linked to that user; otherwise it is a guest order (customer: null).',
+          'auth' => 'Public (optional Sanctum token)',
+          'parameters' => [
+            [
+              'name' => 'items',
+              'in' => 'body',
+              'type' => 'array (min 1)',
+              'required' => true,
+              'description' => 'Cart lines. Request example: {"items":[{"product_variant_id":21,"quantity":2}]}',
+            ],
+            [
+              'name' => 'items.*.product_variant_id',
+              'in' => 'body',
+              'type' => 'integer',
+              'required' => true,
+              'description' => 'Id of the size/color variant being bought. Must exist and may appear only once.',
+            ],
+            [
+              'name' => 'items.*.quantity',
+              'in' => 'body',
+              'type' => 'integer (1-99)',
+              'required' => true,
+              'description' => 'Units requested for that variant; rejected with 409 when it exceeds available stock.',
+            ],
+          ],
+          'responses' => [
+            [
+              'status' => 201,
+              'description' => 'Order placed. Stock has already been decremented and the response contains the snapshots.',
+              'example' => [
+                'data' => [
+                  'id' => 24,
+                  'status' => 'pending',
+                  'totalAmount' => '39.98',
+                  'itemsCount' => 1,
+                  'customer' => null,
+                  'items' => [
+                    [
+                      'id' => 41,
+                      'productId' => 7,
+                      'productVariantId' => 21,
+                      'quantity' => 2,
+                      'unitPrice' => '19.99',
+                      'lineTotal' => '39.98',
+                      'product' => [
+                        'id' => 7,
+                        'slug' => 'classic-white-tee',
+                        'name' => 'Classic White Tee',
+                        'title' => 'Classic White Tee',
+                      ],
+                      'variant' => [
+                        'id' => 21,
+                        'size' => 'M',
+                        'color' => 'White',
+                        'colorHex' => '#FFFFFF',
+                        'sku' => 'CLASSIC-WHITE-TEE-M-WHITE',
+                      ],
+                    ],
+                  ],
+                  'createdAt' => '2026-11-01T20:30:00+02:00',
+                  'updatedAt' => '2026-11-01T20:30:00+02:00',
+                ],
+              ],
+            ],
+            [
+              'status' => 409,
+              'description' => 'Stock conflict — the variant sold out or was deactivated since the cart was built. '
+                . 'Nothing is written; the whole transaction rolls back.',
+              'example' => [
+                'message' => 'Size «M» is out of stock: only 0 left, 2 requested.',
+                'status' => 409,
+              ],
+            ],
+            [
+              'status' => 422,
+              'description' => 'Validation failed (empty items, unknown variant, duplicate variant line, bad quantity).',
+              'example' => [
+                'message' => 'The items field is required.',
+                'errors' => [
+                  'items' => ['The items field is required.'],
+                ],
+              ],
+            ],
+          ],
+        ],
+        [
+          'method' => 'GET',
+          'path' => '/orders/{order}',
+          'summary' => 'Show a single order (owner or admin)',
+          'description' => 'Returns one order with its lines. The owner sees their own order; admins see any order. '
+            . 'Guest orders (customer: null) are admin-only because a guest has no credentials to prove ownership.',
+          'auth' => 'Sanctum (owner or admin)',
+          'parameters' => [
+            [
+              'name' => 'order',
+              'in' => 'path',
+              'type' => 'integer',
+              'required' => true,
+              'description' => 'Order id.',
+            ],
+            [
+              'name' => 'lang',
+              'in' => 'query',
+              'type' => 'string (en | ar)',
+              'required' => false,
+              'description' => 'Language for the nested product title and variant color.',
+            ],
+          ],
+          'responses' => [
+            [
+              'status' => 200,
+              'description' => 'The order.',
+              'example' => [
+                'data' => [
+                  'id' => 24,
+                  'status' => 'shipped',
+                  'totalAmount' => '89.48',
+                  'itemsCount' => 1,
+                  'customer' => [
+                    'id' => 11,
+                    'name' => 'Test User',
+                    'email' => 'test@example.com',
+                  ],
+                  'items' => [
+                    [
+                      'id' => 41,
+                      'productId' => 7,
+                      'productVariantId' => 21,
+                      'quantity' => 2,
+                      'unitPrice' => '19.99',
+                      'lineTotal' => '39.98',
+                      'product' => [
+                        'id' => 7,
+                        'slug' => 'classic-white-tee',
+                        'name' => 'Classic White Tee',
+                        'title' => 'تيشيرت أبيض كلاسيكي',
+                      ],
+                      'variant' => [
+                        'id' => 21,
+                        'size' => 'M',
+                        'color' => 'أبيض',
+                        'colorHex' => '#FFFFFF',
+                        'sku' => 'CLASSIC-WHITE-TEE-M-WHITE',
+                      ],
+                    ],
+                  ],
+                  'createdAt' => '2026-11-01T20:30:00+02:00',
+                  'updatedAt' => '2026-11-01T20:30:00+02:00',
+                ],
+              ],
+            ],
+            [
+              'status' => 401,
+              'description' => 'No token/session was sent.',
+              'example' => ['message' => 'Unauthenticated.'],
+            ],
+            [
+              'status' => 403,
+              'description' => 'The order belongs to another customer and the caller is not an admin.',
+              'example' => ['message' => 'This action is unauthorized.'],
+            ],
+            [
+              'status' => 404,
+              'description' => 'No order with that id.',
+              'example' => [
+                'message' => 'Order (999999) not found, try to refresh the order list or use the correct id.',
+                'status' => 404,
+              ],
+            ],
+          ],
+        ],
+        [
+          'method' => 'PUT|PATCH',
+          'path' => '/orders/{order}',
+          'summary' => 'Change the order status (admin)',
+          'description' => 'Moves an order along its lifecycle. Only status is mutable — items, price snapshots and '
+            . 'totalAmount are historical records and cannot be rewritten. Allowed values: pending, processing, '
+            . 'shipped, delivered, cancelled.',
+          'auth' => 'Sanctum (admin only)',
+          'parameters' => [
+            [
+              'name' => 'order',
+              'in' => 'path',
+              'type' => 'integer',
+              'required' => true,
+              'description' => 'Order id.',
+            ],
+            [
+              'name' => 'status',
+              'in' => 'body',
+              'type' => 'string (pending | processing | shipped | delivered | cancelled)',
+              'required' => true,
+              'description' => 'New status. Request example: {"status":"shipped"}',
+            ],
+          ],
+          'responses' => [
+            [
+              'status' => 200,
+              'description' => 'The updated order.',
+              'example' => [
+                'data' => [
+                  'id' => 24,
+                  'status' => 'shipped',
+                  'totalAmount' => '89.48',
+                  'itemsCount' => 1,
+                  'customer' => [
+                    'id' => 11,
+                    'name' => 'Test User',
+                    'email' => 'test@example.com',
+                  ],
+                  'items' => [
+                    [
+                      'id' => 41,
+                      'productId' => 7,
+                      'productVariantId' => 21,
+                      'quantity' => 2,
+                      'unitPrice' => '19.99',
+                      'lineTotal' => '39.98',
+                      'product' => [
+                        'id' => 7,
+                        'slug' => 'classic-white-tee',
+                        'name' => 'Classic White Tee',
+                        'title' => 'Classic White Tee',
+                      ],
+                      'variant' => [
+                        'id' => 21,
+                        'size' => 'M',
+                        'color' => 'White',
+                        'colorHex' => '#FFFFFF',
+                        'sku' => 'CLASSIC-WHITE-TEE-M-WHITE',
+                      ],
+                    ],
+                  ],
+                  'createdAt' => '2026-11-01T20:30:00+02:00',
+                  'updatedAt' => '2026-11-02T09:15:00+02:00',
+                ],
+              ],
+            ],
+            [
+              'status' => 401,
+              'description' => 'No token/session was sent.',
+              'example' => ['message' => 'Unauthenticated.'],
+            ],
+            [
+              'status' => 403,
+              'description' => 'Authenticated, but not an admin.',
+              'example' => ['message' => 'This action is unauthorized.'],
+            ],
+            [
+              'status' => 404,
+              'description' => 'No order with that id.',
+              'example' => [
+                'message' => 'Order (999999) not found, try to refresh the order list or use the correct id.',
+                'status' => 404,
+              ],
+            ],
+            [
+              'status' => 422,
+              'description' => 'Status missing or outside the allowed set.',
+              'example' => [
+                'message' => 'The selected status is invalid.',
+                'errors' => [
+                  'status' => ['The selected status is invalid.'],
+                ],
+              ],
+            ],
+          ],
+        ],
+        [
+          'method' => 'DELETE',
+          'path' => '/orders/{order}',
+          'summary' => 'Delete an order (admin)',
+          'description' => 'Permanently removes the order; its order_items rows cascade at the database level.',
+          'auth' => 'Sanctum (admin only)',
+          'parameters' => [
+            [
+              'name' => 'order',
+              'in' => 'path',
+              'type' => 'integer',
+              'required' => true,
+              'description' => 'Order id.',
+            ],
+          ],
+          'responses' => [
+            [
+              'status' => 204,
+              'description' => 'Deleted. No response body.',
+              'example' => null,
+            ],
+            [
+              'status' => 401,
+              'description' => 'No token/session was sent.',
+              'example' => ['message' => 'Unauthenticated.'],
+            ],
+            [
+              'status' => 403,
+              'description' => 'Authenticated, but not an admin.',
+              'example' => ['message' => 'This action is unauthorized.'],
+            ],
+            [
+              'status' => 404,
+              'description' => 'No order with that id.',
+              'example' => [
+                'message' => 'Order (999999) not found, try to refresh the order list or use the correct id.',
+                'status' => 404,
+              ],
+            ],
+          ],
+        ],
+      ],
+    ],
+    [
       'name' => 'Content',
       'slug' => 'content',
       'description' => 'Editorial pages shared by every storefront client (Vue SPA, Flutter app). '
@@ -463,9 +883,8 @@ return [
     ['method' => 'POST', 'path' => '/products', 'summary' => 'Create a product', 'note' => 'Admin only. Stub.'],
     ['method' => 'PUT', 'path' => '/products/{product}', 'summary' => 'Update a product', 'note' => 'Admin only. Stub.'],
     ['method' => 'DELETE', 'path' => '/products/{product}', 'summary' => 'Delete a product', 'note' => 'Admin only. Stub.'],
-    ['method' => 'GET', 'path' => '/orders', 'summary' => 'List orders', 'note' => 'Admin only. Stub.'],
-    ['method' => 'POST', 'path' => '/orders', 'summary' => 'Place an order (guest or auth, stock re-check → 409)', 'note' => 'Stub.'],
-    ['method' => 'GET', 'path' => '/orders/{order}', 'summary' => 'Show an order (owner or admin)', 'note' => 'Stub.'],
+    ['method' => 'POST', 'path' => '/orders/{order}/cancel', 'summary' => 'Cancel an order (owner, pending/processing only)', 'note' => 'Not registered.'],
+    ['method' => 'GET', 'path' => '/me/orders', 'summary' => 'List the authenticated customer\'s own orders', 'note' => 'Not registered.'],
     ['method' => 'POST', 'path' => '/auth/login', 'summary' => 'Log in and start a Sanctum session', 'note' => 'Not registered.'],
     ['method' => 'POST', 'path' => '/auth/register', 'summary' => 'Register a customer', 'note' => 'Not registered.'],
     ['method' => 'POST', 'path' => '/auth/logout', 'summary' => 'Log out', 'note' => 'Not registered.'],
