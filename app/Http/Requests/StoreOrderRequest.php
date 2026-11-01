@@ -8,9 +8,8 @@ use Illuminate\Validation\Rule;
 class StoreOrderRequest extends FormRequest
 {
   /**
-   * Checkout is open to everyone: guests may order (handoff §5) and an
-   * authenticated caller simply gets the order linked to their account.
-   * Authorization of the *contents* happens below and in the controller.
+   * Checkout is authenticated (auth:sanctum on the route). Input rules below
+   * only cover the cart payload.
    */
   public function authorize(): bool
   {

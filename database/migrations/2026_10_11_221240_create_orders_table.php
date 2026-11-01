@@ -13,8 +13,9 @@ return new class extends Migration
   {
     Schema::create('orders', function (Blueprint $table) {
       $table->id();
-      // Nullable: guests may check out without an account (handoff §5).
-      $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+      // Every order belongs to a customer. Deleting the account removes their
+      // order history, so an order can never be orphaned.
+      $table->foreignId('user_id')->constrained()->cascadeOnDelete();
       $table->enum('status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled'])->default('pending');
 
       // TOTAL AMOUNT OF THE ORDER

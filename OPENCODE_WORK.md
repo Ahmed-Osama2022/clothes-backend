@@ -204,6 +204,9 @@ seeded rows are now in November). `Report.md` §3.4/§7.5 updated.
 
 ## Session 4 — Orders API
 
+> Superseded in part by Session 5: checkout now requires authentication and
+> `orders.user_id` is NOT NULL, so there are no guest orders anymore.
+
 ### 1. Model
 `Order` gained `STATUSES` (mirrors the DB enum) and `items()` now orders by `id`,
 so line order in the JSON is stable.
@@ -270,6 +273,48 @@ admin view of a guest order, JSON `404` payload, admin status update vs customer
   The temporary token was deleted afterwards.
 - `/docs/api` renders 200 with the Orders group; unauthenticated calls return 401
   JSON.
+
+---
+
+## Session 5 — Orders belong to a customer (no guests)
+
+### 1. Schema — `database/migrations/2026_10_11_221240_create_orders_table.php`
+Per the owner's decision (dev project), the rule was changed **in the original
+create migration** instead of adding an alter migration:
+`foreignId('user_id')->constrained()->cascadeOnDelete()` — NOT NULL, and deleting a
+user deletes their orders. The previously added
+`..._make_orders_user_id_required.php` was deleted. Any environment that already
+ran the old version needs `migrate:fresh` (or a rename-style alter) to pick it up.
+
+### 2. API — checkout is authenticated
+- `routes/api.php`: `Route::apiResource('orders', 'OrderController')->middleware('auth:sanctum')`
+  (all five actions; the `middlewareFor(...)` carve-out for a public POST is gone).
+- `OrderController@store`: `$user = $request->user()`; `user_id => $user->id`.
+- `OrderPolicy`: guest-order branch removed; `view()` stays owner-or-admin.
+- `StoreOrderRequest` / `OrderResource` docblocks no longer describe guests.
+
+### 3. Factories & seeders hardened (they already existed)
+- `OrderFactory`: `user_id => User::factory()` (never null), status from
+  `Order::STATUSES`, new `status(string $status)` state helper.
+- `OrderSeeder`: skips customers who already have orders (idempotent — re-running
+  `db:seed` used to duplicate orders); still spreads dates over 12 months.
+- `OrderItemSeeder`: skips orders that already have lines (no duplicate lines, no
+  double recompute) and corrects `total_amount` with `timestamps = false` so the
+  seeded "placed at" date is not overwritten.
+- `User::orders()` hasMany added (used by the seeder, useful for `/me/orders`).
+
+### 4. Tests
+`tests/Feature/OrderEndpointTest.php` rewritten for the new contract: `POST`
+without a token → `401`; authenticated checkout (total `89.48`, stock decremented,
+`customer` always an object); `Order::factory()->create(['user_id' => null])`
+throws `QueryException` (NOT NULL enforced by the DB); deleting a user cascades
+their orders; all previous authorization/validation/`409` cases kept.
+
+### 5. Docs
+`docs/api/v1.php` Orders group: auth now "Sanctum" for every endpoint, POST gains a
+`401` response and a `customer` object in its 201 example, every guest mention
+removed. `DATABASE.md`, `API_DESIGN.md` and `BACKEND_HANDOFF.md` updated so the
+frontend contract says checkout requires a signed-in customer.
 
 ---
 

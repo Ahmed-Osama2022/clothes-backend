@@ -9,9 +9,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * Shapes an order for the API.
  *
  * `totalAmount` is the server-computed sum of the line snapshots — it is never
- * read from the request. `customer` is null for guest checkouts, and both
- * `customer` and `items` are only emitted when the controller has eager-loaded
- * them (so list endpoints can stay light).
+ * read from the request. Every order belongs to a customer, so `customer` is
+ * present whenever the relation is loaded. `customer` and `items` are only
+ * emitted when the controller has eager-loaded them (list endpoints stay light).
  */
 class OrderResource extends JsonResource
 {
@@ -27,7 +27,6 @@ class OrderResource extends JsonResource
       'status' => $this->status,
       'totalAmount' => $this->total_amount,
       'itemsCount' => $this->whenCounted('items'),
-      // Guest order => no account to expose.
       'customer' => $this->whenLoaded('user', fn ($user) => $user ? [
         'id' => $user->id,
         'name' => $user->name,

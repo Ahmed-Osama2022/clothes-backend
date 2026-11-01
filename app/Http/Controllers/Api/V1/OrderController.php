@@ -38,7 +38,7 @@ class OrderController extends Controller
   }
 
   /**
-   * Place an order (guest or authenticated).
+   * Place an order for the authenticated customer.
    *
    * The whole checkout runs in one transaction:
    *  1. read the chosen variants,
@@ -52,8 +52,8 @@ class OrderController extends Controller
    */
   public function store(StoreOrderRequest $request)
   {
-    // Guests have no account; a bearer token or session links the order.
-    $user = $request->user('sanctum') ?? $request->user();
+    // Guaranteed by the auth:sanctum middleware on the route.
+    $user = $request->user();
 
     $lines = $request->validated('items');
 
@@ -104,7 +104,8 @@ class OrderController extends Controller
       }
 
       $order = Order::create([
-        'user_id' => $user?->id,
+        // Non-nullable since 2026_11_02: every order belongs to a customer.
+        'user_id' => $user->id,
         'status' => 'pending',
         'total_amount' => number_format($totalCents / 100, 2, '.', ''),
       ]);

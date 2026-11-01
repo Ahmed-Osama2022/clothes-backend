@@ -26,7 +26,7 @@ we build toward.
      └─────────────┘            └────────────────┘          └────────────────┘
        catalog,                   own profile,                full CRUD,
        product detail,            own orders,                 orders/status,
-       variants, image URLs       place order (or guest)      users, roles,
+       variants, image URLs       place order                 users, roles,
                                                               promo, reviews
 ```
 
@@ -72,7 +72,7 @@ stock rule:  variant.quantity
 
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/api/orders` | **guest or auth**; body `items:[{product_variant_id, quantity}]`; runs in a transaction with a per-variant stock re-check → `409` on shortfall |
+| POST | `/api/orders` | **auth (Sanctum)**; body `items:[{product_variant_id, quantity}]`; the order is owned by the caller (`user_id` required); runs in a transaction with a per-variant stock re-check → `409` on shortfall |
 | GET | `/api/me/orders` | auth: own orders |
 | GET | `/api/orders/{order}` | owner or admin |
 | GET | `/api/orders/{order}/items` | owner or admin |

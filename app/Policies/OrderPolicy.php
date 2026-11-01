@@ -17,8 +17,7 @@ class OrderPolicy
   }
 
   /**
-   * A customer sees only their own orders. Guest orders (user_id is null) are
-   * admin-only: a guest has no credentials to prove they placed them.
+   * A customer sees only their own orders; admins see every order.
    */
   public function view(User $user, Order $order): bool
   {
@@ -26,7 +25,7 @@ class OrderPolicy
   }
 
   /**
-   * Checkout itself is open to guests; StoreOrderRequest handles the input.
+   * Checkout is authenticated: the route middleware guarantees a customer.
    */
   public function create(User $user): bool
   {

@@ -122,7 +122,7 @@ Seed: the **18 products** currently in `src/data/catalog.js`.
 `id`, `author`, `role_en`/`role_ar`, `rating` (1..5), `text_en`/`text_ar`, `avatar_url`, `sort_order`.
 
 ### `orders` + `order_items`
-- `orders` — `id`, `user_id` FK (nullable, guests allowed), `status` (enum: pending / paid / shipped…), `total` decimal(10,2), timestamps.
+- `orders` — `id`, `user_id` FK (**required** — every order belongs to a user; deleting the user deletes their orders), `status` (enum: pending / paid / shipped…), `total` decimal(10,2), timestamps.
 - `order_items` — `id`, `order_id` FK, `product_id` FK, **`size` varchar**, `unit_price` decimal(10,2), `quantity`.
 - **Order-time stock rule:** when an order is placed, re-check `product_sizes.quantity`. If a size sold out since the page loaded, reject with **`409 { "message": "Size «M» is out of stock" }`** — never oversell. Seat this as a transaction + `CHECK (quantity <= stock)` at write time.
 

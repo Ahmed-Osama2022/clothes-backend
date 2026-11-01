@@ -325,16 +325,15 @@ return [
     [
       'name' => 'Orders',
       'slug' => 'orders',
-      'description' => 'Checkout and order history. Placing an order is the only public write in the API '
-        . '(guests are allowed); reading, status changes and deletion are either owner-scoped or admin-only.',
+      'description' => 'Checkout and order history. Every order belongs to a customer, so the whole group requires '
+        . 'a Sanctum token: customers place and read their own orders, admins manage every order.',
       'endpoints' => [
         [
           'method' => 'GET',
           'path' => '/orders',
           'summary' => 'List every order (admin)',
-          'description' => 'Returns all orders newest first, each with its customer (null for guest orders), '
-            . 'line items and an itemsCount. A customer only sees their own orders through '
-            . 'GET /orders/{order}; a shop-wide list is admin-only.',
+          'description' => 'Returns all orders newest first, each with its customer, line items and an itemsCount. '
+            . 'A customer only sees their own orders through GET /orders/{order}; a shop-wide list is admin-only.',
           'auth' => 'Sanctum (admin only)',
           'parameters' => [
             [
@@ -426,13 +425,13 @@ return [
         [
           'method' => 'POST',
           'path' => '/orders',
-          'summary' => 'Place an order (guest or authenticated)',
-          'description' => 'Creates the order and its lines in a single transaction. Prices are never accepted from '
-            . 'the client: each line snapshots the variant price (or the parent product price when the variant price '
-            . 'is null) and the total is recomputed server-side. Stock is decremented with a guarded update, so two '
-            . 'simultaneous checkouts cannot oversell — the loser receives 409. When a token is sent the order is '
-            . 'linked to that user; otherwise it is a guest order (customer: null).',
-          'auth' => 'Public (optional Sanctum token)',
+          'summary' => 'Place an order (authenticated customer)',
+          'description' => 'Creates the order and its lines in a single transaction for the authenticated customer. '
+            . 'Prices are never accepted from the client: each line snapshots the variant price (or the parent '
+            . 'product price when the variant price is null) and the total is recomputed server-side. Stock is '
+            . 'decremented with a guarded update, so two simultaneous checkouts cannot oversell — the loser '
+            . 'receives 409.',
+          'auth' => 'Sanctum',
           'parameters' => [
             [
               'name' => 'items',
@@ -466,7 +465,11 @@ return [
                   'status' => 'pending',
                   'totalAmount' => '39.98',
                   'itemsCount' => 1,
-                  'customer' => null,
+                  'customer' => [
+                    'id' => 11,
+                    'name' => 'Test User',
+                    'email' => 'test@example.com',
+                  ],
                   'items' => [
                     [
                       'id' => 41,
@@ -496,6 +499,11 @@ return [
               ],
             ],
             [
+              'status' => 401,
+              'description' => 'No token/session was sent — checkout requires a customer.',
+              'example' => ['message' => 'Unauthenticated.'],
+            ],
+            [
               'status' => 409,
               'description' => 'Stock conflict — the variant sold out or was deactivated since the cart was built. '
                 . 'Nothing is written; the whole transaction rolls back.',
@@ -520,8 +528,7 @@ return [
           'method' => 'GET',
           'path' => '/orders/{order}',
           'summary' => 'Show a single order (owner or admin)',
-          'description' => 'Returns one order with its lines. The owner sees their own order; admins see any order. '
-            . 'Guest orders (customer: null) are admin-only because a guest has no credentials to prove ownership.',
+          'description' => 'Returns one order with its lines. The owner sees their own order; admins see any order.',
           'auth' => 'Sanctum (owner or admin)',
           'parameters' => [
             [

@@ -13,6 +13,10 @@ class OrderSeeder extends Seeder
    * (the admin does not shop), each a varying number of times, spread over
    * the past year. Older orders have naturally progressed further through the
    * lifecycle while recent ones are still in progress.
+   *
+   * Every order is attached to a customer (orders.user_id is NOT NULL).
+   * Idempotent: a customer who already has orders is skipped, and the number
+   * of orders is derived from the user id, so re-running `db:seed` is a no-op.
    */
   public function run(): void
   {
@@ -21,10 +25,16 @@ class OrderSeeder extends Seeder
       ->get();
 
     $customers->each(function (User $user) {
-      // Some customers order often, some rarely, some not at all yet.
-      $ordersToPlace = fake()->numberBetween(0, 5);
+      // Deterministic target (0-5) derived from the user id, so re-running the
+      // seeder converges instead of piling up new orders: only the missing
+      // ones are created.
+      $missing = ($user->id % 6) - $user->orders()->count();
 
-      for ($i = 0; $i < $ordersToPlace; $i++) {
+      if ($missing <= 0) {
+        return;
+      }
+
+      for ($i = 0; $i < $missing; $i++) {
         $placedAt = fake()->dateTimeBetween('-12 months', 'now');
         $ageInDays = (int) now()->diffInDays($placedAt);
 

@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -34,8 +35,20 @@ class OrderEndpointTest extends TestCase
     return ProductVariant::factory()->create($attributes);
   }
 
-  public function test_guest_can_place_an_order(): void
+  public function test_checkout_requires_authentication(): void
   {
+    $variant = $this->variant(['quantity' => 5]);
+
+    $this->postJson('/api/v1/orders', [
+      'items' => [['product_variant_id' => $variant->id, 'quantity' => 1]],
+    ])->assertStatus(401);
+
+    $this->assertDatabaseCount('orders', 0);
+  }
+
+  public function test_customer_can_place_an_order(): void
+  {
+    $customer = $this->userWithRole('customer');
     $variant = $this->variant(['size' => 'M', 'quantity' => 5, 'price' => '19.99']);
     $fallback = $this->variant([
       'size' => 'L',
@@ -44,7 +57,7 @@ class OrderEndpointTest extends TestCase
       'product_id' => Product::factory()->create(['price' => '49.50'])->id,
     ]);
 
-    $response = $this->postJson('/api/v1/orders', [
+    $response = $this->actingAs($customer, 'sanctum')->postJson('/api/v1/orders', [
       'items' => [
         ['product_variant_id' => $variant->id, 'quantity' => 2],
         ['product_variant_id' => $fallback->id, 'quantity' => 1],
@@ -55,7 +68,8 @@ class OrderEndpointTest extends TestCase
       ->assertJsonPath('data.status', 'pending')
       // 19.99 × 2 + 49.50
       ->assertJsonPath('data.totalAmount', '89.48')
-      ->assertJsonPath('data.customer', null)
+      ->assertJsonPath('data.customer.id', $customer->id)
+      ->assertJsonPath('data.customer.email', $customer->email)
       ->assertJsonPath('data.itemsCount', 2)
       ->assertJsonPath('data.items.0.unitPrice', '19.99')
       ->assertJsonPath('data.items.0.lineTotal', '39.98')
@@ -63,7 +77,7 @@ class OrderEndpointTest extends TestCase
       ->assertJsonCount(2, 'data.items');
 
     $this->assertDatabaseHas('orders', [
-      'user_id' => null,
+      'user_id' => $customer->id,
       'status' => 'pending',
       'total_amount' => '89.48',
     ]);
@@ -73,27 +87,20 @@ class OrderEndpointTest extends TestCase
     $this->assertSame(2, $fallback->fresh()->quantity);
   }
 
-  public function test_authenticated_customer_order_is_linked_to_their_account(): void
+  public function test_orders_require_a_user_at_the_database_level(): void
   {
-    $customer = $this->userWithRole('customer');
-    $variant = $this->variant(['size' => 'S', 'quantity' => 4, 'price' => '10.00']);
+    $this->expectException(QueryException::class);
 
-    $response = $this->actingAs($customer, 'sanctum')->postJson('/api/v1/orders', [
-      'items' => [['product_variant_id' => $variant->id, 'quantity' => 1]],
-    ]);
-
-    $response->assertCreated()
-      ->assertJsonPath('data.customer.id', $customer->id)
-      ->assertJsonPath('data.customer.email', $customer->email);
-
-    $this->assertDatabaseHas('orders', ['user_id' => $customer->id]);
+    // The schema refuses orphan orders outright (user_id is NOT NULL).
+    Order::factory()->create(['user_id' => null]);
   }
 
   public function test_order_is_rejected_when_stock_is_insufficient(): void
   {
+    $customer = $this->userWithRole('customer');
     $variant = $this->variant(['size' => 'M', 'quantity' => 2, 'price' => '15.00']);
 
-    $response = $this->postJson('/api/v1/orders', [
+    $response = $this->actingAs($customer, 'sanctum')->postJson('/api/v1/orders', [
       'items' => [['product_variant_id' => $variant->id, 'quantity' => 3]],
     ]);
 
@@ -109,9 +116,10 @@ class OrderEndpointTest extends TestCase
 
   public function test_order_is_rejected_when_a_variant_is_inactive(): void
   {
+    $customer = $this->userWithRole('customer');
     $variant = $this->variant(['size' => 'XL', 'quantity' => 10, 'is_active' => false]);
 
-    $this->postJson('/api/v1/orders', [
+    $this->actingAs($customer, 'sanctum')->postJson('/api/v1/orders', [
       'items' => [['product_variant_id' => $variant->id, 'quantity' => 1]],
     ])
       ->assertStatus(409)
@@ -122,16 +130,18 @@ class OrderEndpointTest extends TestCase
 
   public function test_order_requires_at_least_one_line(): void
   {
-    $this->postJson('/api/v1/orders', ['items' => []])
+    $this->actingAs($this->userWithRole('customer'), 'sanctum')
+      ->postJson('/api/v1/orders', ['items' => []])
       ->assertStatus(422)
       ->assertJsonValidationErrors('items');
   }
 
   public function test_order_rejects_unknown_variants(): void
   {
-    $this->postJson('/api/v1/orders', [
-      'items' => [['product_variant_id' => 999999, 'quantity' => 1]],
-    ])
+    $this->actingAs($this->userWithRole('customer'), 'sanctum')
+      ->postJson('/api/v1/orders', [
+        'items' => [['product_variant_id' => 999999, 'quantity' => 1]],
+      ])
       ->assertStatus(422)
       ->assertJsonValidationErrors('items.0.product_variant_id');
 
@@ -142,12 +152,13 @@ class OrderEndpointTest extends TestCase
   {
     $variant = $this->variant(['quantity' => 10]);
 
-    $this->postJson('/api/v1/orders', [
-      'items' => [
-        ['product_variant_id' => $variant->id, 'quantity' => 1],
-        ['product_variant_id' => $variant->id, 'quantity' => 2],
-      ],
-    ])->assertStatus(422);
+    $this->actingAs($this->userWithRole('customer'), 'sanctum')
+      ->postJson('/api/v1/orders', [
+        'items' => [
+          ['product_variant_id' => $variant->id, 'quantity' => 1],
+          ['product_variant_id' => $variant->id, 'quantity' => 2],
+        ],
+      ])->assertStatus(422);
 
     $this->assertDatabaseCount('orders', 0);
   }
@@ -156,22 +167,25 @@ class OrderEndpointTest extends TestCase
   {
     $variant = $this->variant(['quantity' => 10]);
 
-    $this->postJson('/api/v1/orders', [
-      'items' => [['product_variant_id' => $variant->id, 'quantity' => 0]],
-    ])
+    $this->actingAs($this->userWithRole('customer'), 'sanctum')
+      ->postJson('/api/v1/orders', [
+        'items' => [['product_variant_id' => $variant->id, 'quantity' => 0]],
+      ])
       ->assertStatus(422)
       ->assertJsonValidationErrors('items.0.quantity');
   }
 
   public function test_admin_can_list_every_order(): void
   {
-    Order::factory()->count(3)->create(['user_id' => null]);
+    Order::factory()->count(3)->create();
 
     $this->actingAs($this->userWithRole('admin'), 'sanctum')
       ->getJson('/api/v1/orders')
       ->assertOk()
       ->assertJsonCount(3, 'data')
-      ->assertJsonPath('data.0.itemsCount', 0);
+      ->assertJsonPath('data.0.itemsCount', 0)
+      // Every listed order exposes its customer (no orphan orders).
+      ->assertJsonPath('data.0.customer.id', fn ($id) => is_int($id));
   }
 
   public function test_customer_cannot_list_every_order(): void
@@ -209,14 +223,15 @@ class OrderEndpointTest extends TestCase
       ->assertStatus(403);
   }
 
-  public function test_admin_can_view_a_guest_order(): void
+  public function test_admin_can_view_any_customers_order(): void
   {
-    $order = Order::factory()->create(['user_id' => null]);
+    $order = Order::factory()->create();
 
     $this->actingAs($this->userWithRole('admin'), 'sanctum')
       ->getJson("/api/v1/orders/{$order->id}")
       ->assertOk()
-      ->assertJsonPath('data.customer', null);
+      ->assertJsonPath('data.id', $order->id)
+      ->assertJsonPath('data.customer.id', $order->user_id);
   }
 
   public function test_unknown_order_returns_the_json_404_payload(): void
@@ -232,7 +247,7 @@ class OrderEndpointTest extends TestCase
 
   public function test_admin_can_update_the_order_status(): void
   {
-    $order = Order::factory()->create(['status' => 'pending']);
+    $order = Order::factory()->status('pending')->create();
 
     $this->actingAs($this->userWithRole('admin'), 'sanctum')
       ->patchJson("/api/v1/orders/{$order->id}", ['status' => 'shipped'])
@@ -283,5 +298,16 @@ class OrderEndpointTest extends TestCase
       ->assertStatus(403);
 
     $this->assertDatabaseHas('orders', ['id' => $order->id]);
+  }
+
+  public function test_deleting_a_user_deletes_their_orders(): void
+  {
+    $customer = $this->userWithRole('customer');
+    $order = Order::factory()->create(['user_id' => $customer->id]);
+
+    $customer->delete();
+
+    // CASCADE at the database level: no orphan orders can exist.
+    $this->assertDatabaseMissing('orders', ['id' => $order->id]);
   }
 }
