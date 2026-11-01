@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AboutController;
+use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+// Legacy current-user endpoint kept for existing clients; the documented
+// versioned alternative is GET /api/v1/auth/me (returns roles, camelCase).
 Route::get('/user', function (Request $request) {
   return $request->user();
 })->middleware('auth:sanctum');
@@ -12,6 +15,17 @@ Route::get('/user', function (Request $request) {
 
 // API_v1 Routes
 Route::group(['prefix' => 'v1', 'namespace' => "App\Http\Controllers\Api\V1"], function () {
+  // Authentication
+  // Stateless Sanctum bearer tokens: register/login hand one out, logout
+  // revokes it, me identifies the caller. Login and register are throttled
+  // per IP to slow credential stuffing and fake sign-ups.
+  Route::prefix('auth')->controller(AuthController::class)->group(function () {
+    Route::post('register', 'register')->middleware('throttle:6,1');
+    Route::post('login', 'login')->middleware('throttle:6,1');
+    Route::post('logout', 'logout')->middleware('auth:sanctum');
+    Route::get('me', 'me')->middleware('auth:sanctum');
+  });
+
   // Categories
   // Route::apiResource('categories', 'CategoryController'); // OR
   Route::apiResource('categories', CategoryController::class);

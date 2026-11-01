@@ -341,7 +341,9 @@
 
           @foreach ($group['endpoints'] as $endpoint)
             @php
-              $base = $group['base'] ?? $spec['base_url'];
+              // A group shares one base, but a legacy route can override it
+              // (e.g. GET /api/user next to the versioned /api/v1/auth/*).
+              $base = $endpoint['base'] ?? $group['base'] ?? $spec['base_url'];
             @endphp
             <details class="card" id="{{ $anchorFor($endpoint) }}">
               <summary class="card-head">

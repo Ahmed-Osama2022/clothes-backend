@@ -17,8 +17,9 @@ return [
   'base_url' => '/api/v1',
   'description' => 'Read-only JSON catalog API for the bilingual (EN/AR) clothes storefront. '
     . 'Every response is JSON with a top-level "data" key: an object for a single '
-    . 'resource, an array for a collection. Authentication is Sanctum-based and only '
-    . 'registered so far for GET /api/user — all catalog routes below are public.',
+    . 'resource, an array for a collection. Authentication is Sanctum bearer-token based: '
+    . 'register/login return a token that protected routes expect as Authorization: Bearer. '
+    . 'Catalog and content routes are public.',
 
   'conventions' => [
     [
@@ -414,7 +415,7 @@ return [
               'status' => 401,
               'description' => 'No token/session was sent.',
               'example' => [
-                'message' => 'Authentication required. Send a Sanctum bearer token.',
+                'message' => 'Authentication required. Please login first',
                 'status' => 401,
               ],
             ],
@@ -505,7 +506,7 @@ return [
               'status' => 401,
               'description' => 'No token/session was sent — checkout requires a customer.',
               'example' => [
-                'message' => 'Authentication required. Send a Sanctum bearer token.',
+                'message' => 'Authentication required. Please login first',
                 'status' => 401,
               ],
             ],
@@ -599,7 +600,7 @@ return [
               'status' => 401,
               'description' => 'No token/session was sent.',
               'example' => [
-                'message' => 'Authentication required. Send a Sanctum bearer token.',
+                'message' => 'Authentication required. Please login first',
                 'status' => 401,
               ],
             ],
@@ -689,7 +690,7 @@ return [
               'status' => 401,
               'description' => 'No token/session was sent.',
               'example' => [
-                'message' => 'Authentication required. Send a Sanctum bearer token.',
+                'message' => 'Authentication required. Please login first',
                 'status' => 401,
               ],
             ],
@@ -743,7 +744,7 @@ return [
               'status' => 401,
               'description' => 'No token/session was sent.',
               'example' => [
-                'message' => 'Authentication required. Send a Sanctum bearer token.',
+                'message' => 'Authentication required. Please login first',
                 'status' => 401,
               ],
             ],
@@ -853,18 +854,245 @@ return [
     [
       'name' => 'Authentication',
       'slug' => 'authentication',
-      // Lives outside the /v1 prefix, so the group overrides the base URL.
-      'base' => '/api',
-      'description' => 'Sanctum is installed and the CSRF cookie route exists; only the current-user check is '
-        . 'registered so far.',
+      'base' => '/api/v1',
+      'description' => 'Stateless Sanctum bearer-token auth. POST /auth/register and POST /auth/login return a '
+        . 'personal access token; send it as "Authorization: Bearer <token>" on every protected route. '
+        . 'POST /auth/logout revokes the token it was called with, so signing out of one device leaves the '
+        . 'others signed in. A missing or invalid token answers 401 with '
+        . '{ "message": "Authentication required. Please login first", "status": 401 }.',
       'endpoints' => [
+        [
+          'method' => 'POST',
+          'path' => '/auth/register',
+          'summary' => 'Register a customer and get a token',
+          'description' => 'Creates the account, assigns the "customer" role (admins are never created here) and '
+            . 'signs the caller in by returning a token. The email must be unused; the password is hashed and '
+            . 'never returned. The plain-text token is shown once — store it, it cannot be retrieved again.',
+          'auth' => 'Public (throttled to 6 requests/minute per IP)',
+          'parameters' => [
+            [
+              'name' => 'name',
+              'in' => 'body',
+              'type' => 'string',
+              'required' => true,
+              'description' => 'Customer display name, max 255 characters.',
+            ],
+            [
+              'name' => 'email',
+              'in' => 'body',
+              'type' => 'string',
+              'required' => true,
+              'description' => 'Unique login email. Stored lowercase, so it is case-insensitive.',
+            ],
+            [
+              'name' => 'password',
+              'in' => 'body',
+              'type' => 'string',
+              'required' => true,
+              'description' => 'At least 8 characters (Laravel password defaults). Must match password_confirmation.',
+            ],
+            [
+              'name' => 'password_confirmation',
+              'in' => 'body',
+              'type' => 'string',
+              'required' => true,
+              'description' => 'The same password again. A missing or different value fails with 422 before the '
+                . 'account is created.',
+            ],
+            [
+              'name' => 'device_name',
+              'in' => 'body',
+              'type' => 'string',
+              'required' => false,
+              'description' => 'Label for the issued token, e.g. "iPhone 15". Defaults to "api".',
+            ],
+          ],
+          'responses' => [
+            [
+              'status' => 201,
+              'description' => 'Account created, token issued.',
+              'example' => [
+                'data' => [
+                  'user' => [
+                    'id' => 13,
+                    'name' => 'Sara Hassan',
+                    'email' => 'sara@example.com',
+                    'roles' => ['customer'],
+                    'emailVerifiedAt' => null,
+                    'createdAt' => '2026-11-01T21:10:00+02:00',
+                    'updatedAt' => '2026-11-01T21:10:00+02:00',
+                  ],
+                  'token' => '13|1a2b3c4d5e6f7g8h9i0jklmnopqrstuv',
+                  'tokenType' => 'Bearer',
+                ],
+              ],
+            ],
+            [
+              'status' => 422,
+              'description' => 'Validation failed (missing fields, malformed email, email already taken, weak password, '
+                . 'password_confirmation missing or different).',
+              'example' => [
+                'message' => 'The email has already been taken.',
+                'errors' => [
+                  'email' => ['The email has already been taken.'],
+                ],
+              ],
+            ],
+            [
+              'status' => 429,
+              'description' => 'Too many attempts from this IP. Retry after the Retry-After header.',
+              'example' => [
+                'message' => 'Too Many Attempts.',
+              ],
+            ],
+          ],
+        ],
+        [
+          'method' => 'POST',
+          'path' => '/auth/login',
+          'summary' => 'Log in and get a token',
+          'description' => 'Exchanges email + password for a personal access token. Unknown email and wrong '
+            . 'password both answer the same 401, so the endpoint cannot be used to discover which emails exist. '
+            . 'Every login creates a new token; earlier tokens stay valid until they expire or are revoked.',
+          'auth' => 'Public (throttled to 6 requests/minute per IP)',
+          'parameters' => [
+            [
+              'name' => 'email',
+              'in' => 'body',
+              'type' => 'string',
+              'required' => true,
+              'description' => 'The account email.',
+            ],
+            [
+              'name' => 'password',
+              'in' => 'body',
+              'type' => 'string',
+              'required' => true,
+              'description' => 'The account password.',
+            ],
+            [
+              'name' => 'device_name',
+              'in' => 'body',
+              'type' => 'string',
+              'required' => false,
+              'description' => 'Label for the issued token, e.g. "Android". Defaults to "api".',
+            ],
+          ],
+          'responses' => [
+            [
+              'status' => 200,
+              'description' => 'Credentials accepted, token issued.',
+              'example' => [
+                'data' => [
+                  'user' => [
+                    'id' => 13,
+                    'name' => 'Sara Hassan',
+                    'email' => 'sara@example.com',
+                    'roles' => ['customer'],
+                    'emailVerifiedAt' => null,
+                    'createdAt' => '2026-11-01T21:10:00+02:00',
+                    'updatedAt' => '2026-11-01T21:10:00+02:00',
+                  ],
+                  'token' => '14|z9y8x7w6v5u4t3s2r1q0ponmlkjihgfe',
+                  'tokenType' => 'Bearer',
+                ],
+              ],
+            ],
+            [
+              'status' => 401,
+              'description' => 'Wrong email or password (deliberately indistinguishable).',
+              'example' => [
+                'message' => 'Invalid email or password.',
+                'status' => 401,
+              ],
+            ],
+            [
+              'status' => 422,
+              'description' => 'Missing or malformed fields.',
+              'example' => [
+                'message' => 'The email field is required.',
+                'errors' => [
+                  'email' => ['The email field is required.'],
+                ],
+              ],
+            ],
+            [
+              'status' => 429,
+              'description' => 'Too many attempts from this IP. Retry after the Retry-After header.',
+              'example' => [
+                'message' => 'Too Many Attempts.',
+              ],
+            ],
+          ],
+        ],
+        [
+          'method' => 'POST',
+          'path' => '/auth/logout',
+          'summary' => 'Revoke the current token',
+          'description' => 'Deletes the personal access token used for the request. Other devices keep their '
+            . 'tokens. The response has no body; the client should drop the token it stored.',
+          'auth' => 'Sanctum',
+          'parameters' => [],
+          'responses' => [
+            [
+              'status' => 204,
+              'description' => 'Token revoked. No response body.',
+              'example' => null,
+            ],
+            [
+              'status' => 401,
+              'description' => 'No token/session was sent.',
+              'example' => [
+                'message' => 'Authentication required. Please login first',
+                'status' => 401,
+              ],
+            ],
+          ],
+        ],
+        [
+          'method' => 'GET',
+          'path' => '/auth/me',
+          'summary' => 'Current authenticated user',
+          'description' => 'Returns the caller with their role names, so a frontend can decide whether to show '
+            . 'admin screens. Same user shape as the register/login payload.',
+          'auth' => 'Sanctum',
+          'parameters' => [],
+          'responses' => [
+            [
+              'status' => 200,
+              'description' => 'The authenticated user.',
+              'example' => [
+                'data' => [
+                  'id' => 13,
+                  'name' => 'Sara Hassan',
+                  'email' => 'sara@example.com',
+                  'roles' => ['customer'],
+                  'emailVerifiedAt' => null,
+                  'createdAt' => '2026-11-01T21:10:00+02:00',
+                  'updatedAt' => '2026-11-01T21:10:00+02:00',
+                ],
+              ],
+            ],
+            [
+              'status' => 401,
+              'description' => 'No token/session was sent.',
+              'example' => [
+                'message' => 'Authentication required. Please login first',
+                'status' => 401,
+              ],
+            ],
+          ],
+        ],
         [
           'method' => 'GET',
           'path' => '/user',
-          'summary' => 'Current authenticated user',
-          'description' => 'Returns the Sanctum-authenticated user as a plain JSON object (no "data" wrapper). '
-            . 'Requires a valid session cookie or bearer token.',
-          'auth' => 'Sanctum (session cookie or bearer token)',
+          // Legacy skeleton route outside the /v1 prefix.
+          'base' => '/api',
+          'summary' => 'Current authenticated user (legacy)',
+          'description' => 'The original Laravel skeleton endpoint, kept for clients that already call it. '
+            . 'Returns the raw user model (snake_case timestamps, no roles) and has no version prefix — prefer '
+            . 'GET /api/v1/auth/me, which returns the documented UserResource shape.',
+          'auth' => 'Sanctum',
           'parameters' => [],
           'responses' => [
             [
@@ -883,7 +1111,7 @@ return [
               'status' => 401,
               'description' => 'No token/session was sent.',
               'example' => [
-                'message' => 'Authentication required. Send a Sanctum bearer token.',
+                'message' => 'Authentication required. Please login first',
                 'status' => 401,
               ],
             ],
@@ -910,8 +1138,5 @@ return [
     ['method' => 'DELETE', 'path' => '/products/{product}', 'summary' => 'Delete a product', 'note' => 'Admin only. Stub.'],
     ['method' => 'POST', 'path' => '/orders/{order}/cancel', 'summary' => 'Cancel an order (owner, pending/processing only)', 'note' => 'Not registered.'],
     ['method' => 'GET', 'path' => '/me/orders', 'summary' => 'List the authenticated customer\'s own orders', 'note' => 'Not registered.'],
-    ['method' => 'POST', 'path' => '/auth/login', 'summary' => 'Log in and start a Sanctum session', 'note' => 'Not registered.'],
-    ['method' => 'POST', 'path' => '/auth/register', 'summary' => 'Register a customer', 'note' => 'Not registered.'],
-    ['method' => 'POST', 'path' => '/auth/logout', 'summary' => 'Log out', 'note' => 'Not registered.'],
   ],
 ];

@@ -45,7 +45,7 @@ class OrderEndpointTest extends TestCase
       ->assertStatus(401)
       // Custom renderer in bootstrap/app.php — not Laravel's "Unauthenticated."
       ->assertExactJson([
-        'message' => 'Authentication required. Send a Sanctum bearer token.',
+        'message' => 'Authentication required. Please login first',
         'status' => 401,
       ]);
 
@@ -206,7 +206,7 @@ class OrderEndpointTest extends TestCase
     $this->getJson('/api/v1/orders')
       ->assertStatus(401)
       ->assertExactJson([
-        'message' => 'Authentication required. Send a Sanctum bearer token.',
+        'message' => 'Authentication required. Please login first',
         'status' => 401,
       ]);
   }

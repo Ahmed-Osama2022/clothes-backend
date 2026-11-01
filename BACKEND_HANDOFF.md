@@ -133,14 +133,20 @@ Frontend cart is localStorage-only today. If you add server-side carts later: `i
 
 ## 6. API routes (all JSON)
 
-### Auth — Sanctum SPA
+### Auth — Sanctum (bearer tokens)
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/sanctum/csrf-cookie` | prime CSRF cookie (frontend calls before auth requests) |
-| GET | `/api/auth/me` | current user |
-| POST | `/api/auth/login` | `{ email, password }` |
-| POST | `/api/auth/register` | `{ name, email, password }` |
-| POST | `/api/auth/logout` | revoke session (`Accept: application/json`) |
+| POST | `/api/v1/auth/register` | `{ name, email, password, password_confirmation }` → `201`, customer + token |
+| POST | `/api/v1/auth/login` | `{ email, password }` → `200`, token (`401` on bad credentials) |
+| POST | `/api/v1/auth/logout` | revoke the token used for the call (`204`) |
+| GET | `/api/v1/auth/me` | current user + `roles` |
+| GET | `/api/user` | legacy skeleton route (raw model, no version prefix) |
+
+Auth responses are `{ "data": { "user": {...}, "token": "id|plainText", "tokenType": "Bearer" } }`;
+send `Authorization: Bearer <token>` on protected calls. The SPA cookie/CSRF flow
+(`withCredentials`, `/sanctum/csrf-cookie`) is **not** enabled yet — that needs
+`statefulApi()` plus CORS credentials, so clients should store the bearer token.
+`GET /sanctum/csrf-cookie` still exists but is not part of this flow.
 
 ### Catalog / content
 | Method | Path | Query | Purpose |

@@ -249,8 +249,8 @@ keeps the `{ message, status }` shape.
 
 ### 6b. Custom 401 body
 An `AuthenticationException` renderer was added to `bootstrap/app.php`:
-`/api/*` now answers `401 {"message":"Authentication required. Send a Sanctum
-bearer token.","status":401}` instead of the framework default
+`/api/*` now answers `401 {"message":"Authentication required. Please login
+first","status":401}` instead of the framework default
 `{"message":"Unauthenticated."}`. It covers every protected route
 (`/api/v1/orders*`, `/api/user`, future ones) and returns `null` for non-API
 requests so web behaviour is unchanged. `docs/api/v1.php` 401 examples (6)
@@ -327,11 +327,52 @@ frontend contract says checkout requires a signed-in customer.
 
 ---
 
+## Session 6 — Authentication API
+
+### 1. Routes — `routes/api.php`
+Auth lives inside the versioned group, under an `auth` prefix:
+`POST /api/v1/auth/register` and `POST /api/v1/auth/login` (public,
+`throttle:6,1`), `POST /api/v1/auth/logout` and `GET /api/v1/auth/me`
+(`auth:sanctum`). `GET /api/user` is kept as a legacy alias outside the prefix.
+
+### 2. Controller — `app/Http/Controllers/Api/V1/AuthController.php`
+- `register`: creates the user, assigns the `customer` role (self-registration can
+  never create an admin), returns `201` + token.
+- `login`: `Hash::check`; one generic `401 {"message":"Invalid email or password.","status":401}`
+  for both unknown email and wrong password, so the endpoint cannot enumerate accounts.
+- `logout`: deletes the `PersonalAccessToken` used for the call only (`204`), so
+  other devices stay signed in.
+- `me`: `UserResource` with role names.
+- `respondWithToken()` keeps a single envelope for register/login:
+  `{ "data": { "user": {...}, "token": "id|plainText", "tokenType": "Bearer" } }`.
+
+### 3. Validation & serialization
+- `RegisterRequest` / `LoginRequest`: trim + lowercase the email in
+  `prepareForValidation()`; registration requires a unique email, a password of
+  at least 8 characters (`Password::defaults()`) sent twice (`password` +
+  `password_confirmation`, enforced by the `confirmed` rule); optional
+  `device_name` labels the token.
+- New `UserResource` (camelCase, `roles` only when eager-loaded). Password,
+  `remember_token` and token rows are never serialized.
+
+### 4. Docs
+`docs/api/v1.php` Authentication group now uses `base: /api/v1` and documents the
+four endpoints (parameters, 200/201/204/401/422/429 with examples); `GET /user`
+keeps its `/api` base through a per-endpoint `base` override added to the docs
+blade. The auth rows were removed from `planned`. `API_DESIGN.md` and
+`BACKEND_HANDOFF.md` auth tables now describe the bearer-token flow (the SPA
+cookie/CSRF flow is still not enabled).
+
+### 5. Verified
+Live smoke on a throwaway server: register `201` (`customer` role + token), `me`
+`200`, login `200` (second token), logout `204`, revoked token → `401` while the
+first token still works, duplicate email → `422`, wrong password → `401`,
+`/docs/api` `200` showing the four new paths. `php artisan test` → 31 passed.
+
+---
+
 ## Open items / next steps
 - Apply soft deletes to `Category` and `Product` (step 6) — not done yet.
-- Auth endpoints (`/api/v1/auth/login|register|logout`) — required before the
-  token-guarded order routes are usable by clients (orders work today only with a
-  manually issued Sanctum token).
 - `GET /me/orders` (customer order history) and `POST /orders/{order}/cancel`
   (owner, `pending`/`processing` only) — documented as planned.
 - Per-variant stock endpoint (`GET /products/{id}/stock` → `{product_id, sizes[]}`)

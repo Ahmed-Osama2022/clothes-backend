@@ -57,16 +57,20 @@ stock rule:  variant.quantity
 | GET | `/api/products/{product:slug}/variants` | variant list |
 | GET | `/api/variants/{sku}` | barcode / warehouse / support lookup (SKU is a *filter key*, not identity) |
 
-### Auth — Sanctum
+### Auth — Sanctum (bearer tokens, implemented)
 
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/api/register` | creates customer + token |
-| POST | `/api/login` | returns token |
-| POST | `/api/logout` | auth |
-| GET | `/api/me` | current user + roles |
-| POST | `/api/forgot-password` | optional |
-| POST | `/api/reset-password` | optional |
+| POST | `/api/v1/auth/register` | `{name,email,password,password_confirmation[,device_name]}` → `201` customer (`customer` role) + token; throttled 6/min |
+| POST | `/api/v1/auth/login` | `{email,password[,device_name]}` → `200` token; `401` for unknown email *and* wrong password; throttled 6/min |
+| POST | `/api/v1/auth/logout` | auth; revokes only the token used for the call → `204` |
+| GET | `/api/v1/auth/me` | auth; user + `roles` in the camelCase `UserResource` shape |
+| GET | `/api/user` | legacy Laravel skeleton route, outside v1; raw user model, no roles |
+| POST | `/api/v1/auth/forgot-password` | not registered (optional) |
+| POST | `/api/v1/auth/reset-password` | not registered (optional) |
+
+New tokens are returned once as `{ "data": { "user": {...}, "token": "id|plainText", "tokenType": "Bearer" } }`;
+clients send `Authorization: Bearer <token>`.
 
 ### Customer / checkout
 
