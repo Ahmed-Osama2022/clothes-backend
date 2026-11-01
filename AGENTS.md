@@ -70,3 +70,15 @@ This project is backend-only: a pure JSON API consumed by external front-ends.
 Do **not** create or touch anything front-end related — no Blade views, no Tailwind/CSS, no JS bundles, no Vite assets, no Inertia/Livewire. If a task seems to require front-end output, stop and ask the user first; the answer is "no need for now" unless they explicitly say otherwise.
 
 The `resources/` directory and Vite wiring exist only from the default Laravel skeleton — treat them as untouched boilerplate, not as something to build on.
+
+**One approved exception:** the internal API reference page (`GET /docs/api`). It is developer documentation served by `App\Http\Controllers\Docs\ApiDocsController` through `resources/views/docs/api.blade.php`, with self-contained inline CSS and no build step. Do not extend it into a storefront UI.
+
+## 7. Document every API endpoint
+
+Every endpoint — new, changed, or removed — must be documented in the same change.
+
+- The single source of truth is `docs/api/v1.php` (one entry per endpoint: method, path, summary, description, auth, parameters, and every response status with a copy-paste accurate JSON example).
+- The page at `GET /docs/api` renders that file; there is no separate HTML to edit for content.
+- Use standard API-doc conventions: one entry per route, parameters listed with `in` (path/query/body), type, required flag, and status-coded responses (`200`, `404`, `422`, …).
+- Move an entry out of the `planned` list into its group only when the endpoint actually works — never document a stub as if it were live.
+- Keep examples in sync with the API Resources (`app/Http/Resources/Api/V1`); if a field is added or renamed, update the example in the same commit.

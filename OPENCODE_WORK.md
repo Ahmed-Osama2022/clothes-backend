@@ -124,6 +124,36 @@ users-less (they only exist as `orders.user_id = null`), so no guest role row.
 
 ---
 
+## Session 2 — API reference page
+
+### 1. Docs rule — `AGENTS.md` § 7 (+ § 6 exception)
+Every API endpoint must now be documented in the same change. Single source of
+truth is `docs/api/v1.php`; § 6 gained the one approved web-UI exception (the
+internal docs page), kept separate from storefront work.
+
+### 2. Reference content — `docs/api/v1.php`
+Structured spec: meta (title/version/base URL/description), cross-cutting
+conventions (localization, slugs, money, timestamps, errors, pagination), two
+groups (`Catalog` with the 4 live endpoints, `Authentication` with `GET /api/user`)
+and a `planned` list for the stubbed/unregistered routes. Examples were copied
+from real responses of the running API.
+
+### 3. Web route + controller + view
+- `GET /docs/api` → `App\Http\Controllers\Docs\ApiDocsController@index`
+  (`app/Http/Controllers/Docs/ApiDocsController.php`), which `require`s the spec
+  and returns `resources/views/docs/api.blade.php`.
+- `GET /docs` → 302 to `/docs/api`.
+- View: single self-contained page (inline CSS, no build step, no external
+  assets) with sticky sidebar, method/status badges, parameter tables, and
+  pretty-printed JSON examples.
+
+### 4. Verified
+- `php artisan route:list --path=docs` shows both routes.
+- `curl /docs/api` → 200 (~30 KB); `/docs` → 302.
+- All 8 JSON example blocks decode as valid JSON after HTML-entity decoding.
+- `php artisan test` still passes (2 skeleton tests).
+
+---
 
 ## Open items / next steps
 - Apply soft deletes to `Category` and `Product` (step 6) — not done yet.
