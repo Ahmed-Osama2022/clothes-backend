@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\SetLocale;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -18,6 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
     // callback calls route('login') and an unauthenticated request fails
     // with "Route [login] not defined" instead of a clean 401.
     $middleware->redirectGuestsTo(fn(Request $request) => $request->is('api/*') ? null : '/');
+
+    // Bilingual errors: ?lang=en|ar selects the locale before validation and
+    // authorization run, so 422/401 bodies answer in the same language as the
+    // content endpoints instead of always using APP_LOCALE.
+    $middleware->api(prepend: [SetLocale::class]);
   })
   ->withExceptions(function (Exceptions $exceptions) {
     // Everything under /api answers JSON, even when a client omits the
@@ -36,7 +42,8 @@ return Application::configure(basePath: dirname(__DIR__))
       }
 
       return response()->json([
-        'message' => 'Authentication required. Please login first',
+        // Translated: lang/{en,ar}/auth.php, following the ?lang parameter.
+        'message' => __('auth.unauthenticated'),
         'status' => 401,
       ], 401);
     });

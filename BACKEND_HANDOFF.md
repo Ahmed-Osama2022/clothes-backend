@@ -148,6 +148,9 @@ send `Authorization: Bearer <token>` on protected calls. The SPA cookie/CSRF flo
 `statefulApi()` plus CORS credentials, so clients should store the bearer token.
 `GET /sanctum/csrf-cookie` still exists but is not part of this flow.
 
+Error language follows `?lang=en|ar` (validation 422 and auth 401 included); the app
+default is Arabic (`APP_LOCALE=ar`), so pass `?lang=en` for English bodies.
+
 ### Catalog / content
 | Method | Path | Query | Purpose |
 |---|---|---:|---|

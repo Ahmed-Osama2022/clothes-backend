@@ -12,6 +12,9 @@ use Illuminate\Validation\Rules\Password;
  * `password` must be sent twice: `password` + `password_confirmation`. The
  * `confirmed` rule checks they are identical, which catches a typo before the
  * account is created (the password cannot be read back afterwards).
+ *
+ * Messages come from lang/{en,ar}/validation.php ("custom" block), so the
+ * response language follows the ?lang parameter.
  */
 class RegisterRequest extends FormRequest
 {
@@ -48,9 +51,4 @@ class RegisterRequest extends FormRequest
       'device_name' => ['sometimes', 'nullable', 'string', 'max:100'],
     ];
   }
-}
-
-public function messages()
-{
-  //
 }

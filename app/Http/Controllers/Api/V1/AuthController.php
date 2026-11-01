@@ -52,7 +52,9 @@ class AuthController extends Controller
 
     if (! $user || ! Hash::check($request->validated('password'), $user->password)) {
       return response()->json([
-        'message' => 'Invalid email or password.',
+        // Same body for unknown email and wrong password; translated via
+        // lang/{en,ar}/auth.php, so ?lang=ar answers in Arabic.
+        'message' => __('auth.invalid_credentials'),
         'status' => 401,
       ], 401);
     }

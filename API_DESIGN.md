@@ -72,6 +72,9 @@ stock rule:  variant.quantity
 New tokens are returned once as `{ "data": { "user": {...}, "token": "id|plainText", "tokenType": "Bearer" } }`;
 clients send `Authorization: Bearer <token>`.
 
+Validation (422) and auth (401) messages are translated (`lang/en`, `lang/ar`) and follow
+`?lang=en|ar`, like the content endpoints; without it the `APP_LOCALE` default applies.
+
 ### Customer / checkout
 
 | Method | Path | Notes |

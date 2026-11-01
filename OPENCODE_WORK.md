@@ -352,6 +352,13 @@ Auth lives inside the versioned group, under an `auth` prefix:
   at least 8 characters (`Password::defaults()`) sent twice (`password` +
   `password_confirmation`, enforced by the `confirmed` rule); optional
   `device_name` labels the token.
+- Both requests define an explicit `messages()` for every rule. The project
+  ships no `lang/` files, so Laravel would otherwise answer with raw keys
+  (`validation.unique`); the messages are what `docs/api/v1.php` documents
+  (e.g. "An account with this email already exists. Try logging in instead.",
+  "The two passwords do not match.", "The password must be at least 8
+  characters long."). `password.min` overrides the message produced by the
+  `Password` rule.
 - New `UserResource` (camelCase, `roles` only when eager-loaded). Password,
   `remember_token` and token rows are never serialized.
 
@@ -371,6 +378,43 @@ first token still works, duplicate email → `422`, wrong password → `401`,
 
 ---
 
+## Session 7 — Arabic localization (?lang)
+
+### 1. Locale middleware — `app/Http/Middleware/SetLocale.php`
+Registered with `$middleware->api(prepend: [SetLocale::class])` in
+`bootstrap/app.php`. A valid `?lang=en|ar` sets `app()->setLocale()` **before**
+validation and authorization run, which is what makes 422/401 bodies bilingual;
+any other value silently keeps `APP_LOCALE`. Content resources still resolve
+their `{field}_{locale}` columns as before.
+
+### 2. Translation files
+`php artisan lang:publish` plus a full Arabic translation:
+`lang/en/{auth,passwords,pagination,validation}.php` and the same four under
+`lang/ar/`. `validation.php` carries the auth-specific messages in its `custom`
+block and bilingual `attributes` (e.g. `items` → "عناصر الطلب") for the order
+endpoints.
+
+### 3. Auth messages now come from lang files
+The `messages()` methods added to `RegisterRequest`/`LoginRequest` were removed —
+hard-coded English defeats `?lang`. Their strings live in
+`validation.custom` in both locales, so `password.confirmed` answers
+"The two passwords do not match." or "كلمتا المرور غير متطابقتين." depending on
+the request. The 401 renderer and the login failure use `__('auth.unauthenticated')`
+and `__('auth.invalid_credentials')` (en/ar).
+
+### 4. Tests & docs
+`phpunit.xml` now pins `APP_LOCALE=en` / `APP_FALLBACK_LOCALE=en` (`.env` has
+`ar`, and the tests assert the English docs examples). `docs/api/v1.php`: the
+Localization convention states that 422/401 messages follow `?lang`, and every
+auth endpoint documents a `lang` query parameter.
+
+### 5. Verified
+`?lang=en` → English 422/401 bodies; `?lang=ar` → Arabic; no `lang` → Arabic
+(`APP_LOCALE=ar`); `?lang=fr` → default, no error. Orders 422/401 translated the
+same way (`items` → "عناصر الطلب"). `php artisan test` → 31 passed.
+
+---
+
 ## Open items / next steps
 - Apply soft deletes to `Category` and `Product` (step 6) — not done yet.
 - `GET /me/orders` (customer order history) and `POST /orders/{order}/cancel`
@@ -380,5 +424,7 @@ first token still works, duplicate email → `422`, wrong password → `401`,
 - Seed the real catalog: the handoff's 18 products + exact Arabic strings still
   need to replace the factory-generated demo data.
 - `reviews`, `promo`, `testimonials` tables/seeders not created yet.
-- Pending decision: rename the About CMS model `Page` → `About` (tables not
-  migrated yet, so the rename is still free).
+- Pending decision: rename the About CMS model `Page` → `About` (tables are
+  migrated now, so it needs a migration/rename step).
+- Order/catalog 404 and 409 messages (`OrderController`, `OrderConflictException`)
+  are still hard-coded English; they do not follow `?lang` yet.

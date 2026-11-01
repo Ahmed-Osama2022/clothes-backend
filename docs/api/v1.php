@@ -26,7 +26,9 @@ return [
       'name' => 'Localization',
       'detail' => 'Send ?lang=en or ?lang=ar. Values other than en/ar fall back to the app default locale. '
         . 'Localized text is read from "{field}_{locale}" columns with an "_en" fallback. '
-        . '"name" is always the base (English) name; "title" and "description" are translated.',
+        . '"name" is always the base (English) name; "title" and "description" are translated. '
+        . 'Validation (422) and authentication (401) messages follow the same parameter, so ?lang=ar '
+        . 'returns Arabic errors.',
     ],
     [
       'name' => 'Slugs',
@@ -858,7 +860,8 @@ return [
       'description' => 'Stateless Sanctum bearer-token auth. POST /auth/register and POST /auth/login return a '
         . 'personal access token; send it as "Authorization: Bearer <token>" on every protected route. '
         . 'POST /auth/logout revokes the token it was called with, so signing out of one device leaves the '
-        . 'others signed in. A missing or invalid token answers 401 with '
+        . 'others signed in. ?lang=en|ar selects the language of the user and error messages. '
+        . 'A missing or invalid token answers 401 with '
         . '{ "message": "Authentication required. Please login first", "status": 401 }.',
       'endpoints' => [
         [
@@ -870,6 +873,14 @@ return [
             . 'never returned. The plain-text token is shown once — store it, it cannot be retrieved again.',
           'auth' => 'Public (throttled to 6 requests/minute per IP)',
           'parameters' => [
+            [
+              'name' => 'lang',
+              'in' => 'query',
+              'type' => 'string (en | ar)',
+              'required' => false,
+              'description' => 'Language of the response, including validation (422) and auth (401) messages. '
+                . 'Defaults to the application locale.',
+            ],
             [
               'name' => 'name',
               'in' => 'body',
@@ -932,9 +943,9 @@ return [
               'description' => 'Validation failed (missing fields, malformed email, email already taken, weak password, '
                 . 'password_confirmation missing or different).',
               'example' => [
-                'message' => 'The email has already been taken.',
+                'message' => 'An account with this email already exists. Try logging in instead.',
                 'errors' => [
-                  'email' => ['The email has already been taken.'],
+                  'email' => ['An account with this email already exists. Try logging in instead.'],
                 ],
               ],
             ],
@@ -956,6 +967,14 @@ return [
             . 'Every login creates a new token; earlier tokens stay valid until they expire or are revoked.',
           'auth' => 'Public (throttled to 6 requests/minute per IP)',
           'parameters' => [
+            [
+              'name' => 'lang',
+              'in' => 'query',
+              'type' => 'string (en | ar)',
+              'required' => false,
+              'description' => 'Language of the response, including validation (422) and auth (401) messages. '
+                . 'Defaults to the application locale.',
+            ],
             [
               'name' => 'email',
               'in' => 'body',
@@ -1010,9 +1029,9 @@ return [
               'status' => 422,
               'description' => 'Missing or malformed fields.',
               'example' => [
-                'message' => 'The email field is required.',
+                'message' => 'Please enter your email address.',
                 'errors' => [
-                  'email' => ['The email field is required.'],
+                  'email' => ['Please enter your email address.'],
                 ],
               ],
             ],
@@ -1032,7 +1051,16 @@ return [
           'description' => 'Deletes the personal access token used for the request. Other devices keep their '
             . 'tokens. The response has no body; the client should drop the token it stored.',
           'auth' => 'Sanctum',
-          'parameters' => [],
+          'parameters' => [
+            [
+              'name' => 'lang',
+              'in' => 'query',
+              'type' => 'string (en | ar)',
+              'required' => false,
+              'description' => 'Language of the response, including validation (422) and auth (401) messages. '
+                . 'Defaults to the application locale.',
+            ],
+          ],
           'responses' => [
             [
               'status' => 204,
@@ -1056,7 +1084,16 @@ return [
           'description' => 'Returns the caller with their role names, so a frontend can decide whether to show '
             . 'admin screens. Same user shape as the register/login payload.',
           'auth' => 'Sanctum',
-          'parameters' => [],
+          'parameters' => [
+            [
+              'name' => 'lang',
+              'in' => 'query',
+              'type' => 'string (en | ar)',
+              'required' => false,
+              'description' => 'Language of the response, including validation (422) and auth (401) messages. '
+                . 'Defaults to the application locale.',
+            ],
+          ],
           'responses' => [
             [
               'status' => 200,
@@ -1093,7 +1130,16 @@ return [
             . 'Returns the raw user model (snake_case timestamps, no roles) and has no version prefix — prefer '
             . 'GET /api/v1/auth/me, which returns the documented UserResource shape.',
           'auth' => 'Sanctum',
-          'parameters' => [],
+          'parameters' => [
+            [
+              'name' => 'lang',
+              'in' => 'query',
+              'type' => 'string (en | ar)',
+              'required' => false,
+              'description' => 'Language of the response, including validation (422) and auth (401) messages. '
+                . 'Defaults to the application locale.',
+            ],
+          ],
           'responses' => [
             [
               'status' => 200,

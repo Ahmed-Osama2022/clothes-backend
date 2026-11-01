@@ -8,6 +8,9 @@ use Illuminate\Foundation\Http\FormRequest;
  * Credentials for the token exchange. Only shape is validated here; whether the
  * pair is correct is decided in the controller (401), not by a validation rule,
  * so a wrong password never reads like a malformed request.
+ *
+ * Messages come from lang/{en,ar}/validation.php ("custom" block), so the
+ * response language follows the ?lang parameter.
  */
 class LoginRequest extends FormRequest
 {
