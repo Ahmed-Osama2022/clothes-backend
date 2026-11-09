@@ -6,6 +6,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Throwable;
 
 return Application::configure(basePath: dirname(__DIR__))
   ->withRouting(
@@ -31,6 +33,22 @@ return Application::configure(basePath: dirname(__DIR__))
     $exceptions->shouldRenderJsonWhen(
       fn(Request $request) => $request->is('api/*') || $request->expectsJson()
     );
+
+    $exceptions->render(function (Throwable $e, Request $request) {
+      if (! $request->is('api/*')) {
+        return null;
+      }
+
+      $status = $e instanceof HttpExceptionInterface
+        ? $e->getStatusCode()
+        : 500;
+
+      return response()->json([
+        'success' => false,
+        'message' => $e->getMessage(),
+        'status' => $status,
+      ], $status);
+    });
 
     // Laravel's default 401 body is {"message":"Unauthenticated."}. Every
     // other error in this API uses { message, status }, so the auth guard
