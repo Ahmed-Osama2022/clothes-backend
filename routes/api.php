@@ -12,9 +12,7 @@ Route::get('/user', function (Request $request) {
   return $request->user();
 })->middleware('auth:sanctum');
 
-Route::get('/users/{id}', function ($id) {
-  abort(404, 'User not found');
-});
+
 // API_v1 Routes
 Route::group(['prefix' => 'v1', 'namespace' => "App\Http\Controllers\Api\V1"], function () {
   // Authentication
